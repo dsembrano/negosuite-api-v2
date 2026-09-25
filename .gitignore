@@ -1,0 +1,52 @@
+*.swp
+*.*~
+project.lock.json
+.DS_Store
+*.pyc
+nupkg/
+
+# Visual Studio Code
+.vscode
+
+# Rider
+.idea
+
+# User-specific files
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+build/
+bld/
+[Bb]in/
+[Oo]bj/
+[Oo]ut/
+msbuild.log
+msbuild.err
+msbuild.wrn
+
+# Visual Studio 2015
+.vs/
+aws-beanstalk-tools-defaults.json
+*.dll
+*.dll
+bin/Debug/net5.0/negosuite-api.dll
+bin/Debug/net5.0/negosuite-api.dll
+bin/Debug/net5.0/negosuite-api.pdb
+obj/Debug/net5.0/negosuite-api.assets.cache
+obj/Debug/net5.0/negosuite-api.csproj.AssemblyReference.cache
+obj/Debug/net5.0/negosuite-api.dll
+obj/Debug/net5.0/negosuite-api.pdb
+obj/negosuite-api.csproj.nuget.dgspec.json
+obj/negosuite-api.csproj.nuget.g.props
+obj/negosuite-api.csproj.nuget.g.targets
+obj/project.assets.json
+obj/project.nuget.cache

@@ -1,0 +1,48 @@
+﻿apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: negosuite-api
+  labels:
+    app: negosuite-api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: negosuite-api
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  minReadySeconds: 5
+  template:
+    metadata:
+      labels:
+        app: negosuite-api
+    spec:
+      containers:
+        - name: negosuite-api
+          image: <IMAGE>
+          envFrom:
+            - secretRef:
+                name: negosuite-api-secret
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: 100m
+            limits:
+              cpu: 100m
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: negosuite-api-service
+spec:
+  type: ClusterIP  # Use ClusterIP instead of LoadBalancer
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 80
+  selector:
+    app: negosuite-api
