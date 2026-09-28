@@ -1,0 +1,63 @@
+﻿{
+    "date":  "2026-09-28",
+    "framework":  "net10.0",
+    "passed":  12,
+    "failed":  0,
+    "total":  12,
+    "httpChecksPassed":  4,
+    "apiOperations":  236,
+    "schemas":  59,
+    "openApiLeafDifferencesFromPhase2":  0,
+    "database":  "isolated MySQL 8.0.46, synthetic EF-generated schema",
+    "productionRoutinesExecuted":  false,
+    "tests":  [
+                  {
+                      "name":  "Negosuite.Api.CompatibilityTests.CompatibilityTests.Valid_jwt_does_not_bypass_missing_config_header",
+                      "outcome":  "Passed"
+                  },
+                  {
+                      "name":  "Negosuite.Api.CompatibilityTests.MySqlCompatibilityTests.Synthetic_mysql_fixture_exercises_signin_refresh_queries_and_session_filter",
+                      "outcome":  "Passed"
+                  },
+                  {
+                      "name":  "Negosuite.Api.CompatibilityTests.CompatibilityTests.Jwt_validation_preserves_access_boundary(mode: \"audience\", expected: 401)",
+                      "outcome":  "Passed"
+                  },
+                  {
+                      "name":  "Negosuite.Api.CompatibilityTests.CompatibilityTests.Jwt_validation_preserves_access_boundary(mode: \"issuer\", expected: 401)",
+                      "outcome":  "Passed"
+                  },
+                  {
+                      "name":  "Negosuite.Api.CompatibilityTests.CompatibilityTests.Cors_preflight_is_handled_before_authentication",
+                      "outcome":  "Passed"
+                  },
+                  {
+                      "name":  "Negosuite.Api.CompatibilityTests.CompatibilityTests.Jwt_validation_preserves_access_boundary(mode: \"missing\", expected: 401)",
+                      "outcome":  "Passed"
+                  },
+                  {
+                      "name":  "Negosuite.Api.CompatibilityTests.CompatibilityTests.Jwt_validation_preserves_access_boundary(mode: \"signature\", expected: 401)",
+                      "outcome":  "Passed"
+                  },
+                  {
+                      "name":  "Negosuite.Api.CompatibilityTests.CompatibilityTests.Localization_runs_before_controller_and_json_is_culture_invariant",
+                      "outcome":  "Passed"
+                  },
+                  {
+                      "name":  "Negosuite.Api.CompatibilityTests.CompatibilityTests.MySql_model_and_parameterized_queries_compile_without_database_access",
+                      "outcome":  "Passed"
+                  },
+                  {
+                      "name":  "Negosuite.Api.CompatibilityTests.CompatibilityTests.Jwt_validation_preserves_access_boundary(mode: \"expired\", expected: 401)",
+                      "outcome":  "Passed"
+                  },
+                  {
+                      "name":  "Negosuite.Api.CompatibilityTests.CompatibilityTests.Missing_refresh_token_retains_problem_details_shape",
+                      "outcome":  "Passed"
+                  },
+                  {
+                      "name":  "Negosuite.Api.CompatibilityTests.CompatibilityTests.Jwt_validation_preserves_access_boundary(mode: \"valid\", expected: 200)",
+                      "outcome":  "Passed"
+                  }
+              ]
+}

@@ -408,6 +408,8 @@ namespace negosuite_api.Models
             {
                 entity.ToTable("customer");
 
+                entity.Property(e => e.CreditLimit).HasColumnType("decimal(20,4)");
+
                 entity.Property(e => e.CreatedDate).HasColumnType("datetime(6)");
 
                 entity.Property(e => e.LastUpdatedDate).HasColumnType("datetime(6)");

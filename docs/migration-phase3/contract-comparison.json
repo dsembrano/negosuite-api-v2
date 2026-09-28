@@ -1,0 +1,16 @@
+﻿{
+    "BaselineOperations":  236,
+    "CandidateOperations":  236,
+    "AddedOperations":  [
+
+                        ],
+    "RemovedOperations":  [
+
+                          ],
+    "BaselineSchemas":  59,
+    "CandidateSchemas":  59,
+    "LeafDifferences":  [
+
+                        ],
+    "Note":  "Metadata comparison only; empty containers, property order and actual database response behavior are not compared."
+}

@@ -5,14 +5,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using negosuite_api.Models;
 using negosuite_api.Services;
 using System.Text;
 using negosuite_api.Controllers;
-using Microsoft.AspNetCore.Mvc;
 using System;
 
 namespace negosuite_api
@@ -73,7 +71,7 @@ namespace negosuite_api
                                };
                            });
 
-            services.AddMvc();
+            services.AddAuthorization();
             services.AddHealthChecks();
             services.AddSingleton<IEmailService, EmailService>();
             services.AddScoped<ConfigUuidFilter>();
@@ -92,11 +90,13 @@ namespace negosuite_api
 
             app.UseHttpsRedirection();
 
-            app.UseAuthentication();
-
             app.UseRouting();
 
+            app.UseRequestLocalization();
+
             app.UseCors("MyPolicy");
+
+            app.UseAuthentication();
 
             app.UseAuthorization();
 
@@ -105,23 +105,6 @@ namespace negosuite_api
                 endpoints.MapControllers();
                 endpoints.MapHealthChecks("/api/health");
             });
-
-            /*
-            var webSocketOptions = new WebSocketOptions
-            {
-                KeepAliveInterval = TimeSpan.FromMinutes(2)
-            };
-
-            app.UseWebSockets(webSocketOptions);
-            */
-
-            app.UseEndpoints(endpoints =>
-            {
-                endpoints.MapControllers();
-            });
-
-            var locOptions = app.ApplicationServices.GetService<IOptions<RequestLocalizationOptions>>();
-            app.UseRequestLocalization(locOptions.Value);
 
         }
     }
