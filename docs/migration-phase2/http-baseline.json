@@ -1,0 +1,42 @@
+﻿[
+    {
+        "Name":  "health",
+        "Method":  "GET",
+        "Path":  "/api/health",
+        "Status":  200,
+        "Expected":  200,
+        "Passed":  true,
+        "ContentType":  "text/plain",
+        "Body":  "Healthy"
+    },
+    {
+        "Name":  "swagger",
+        "Method":  "GET",
+        "Path":  "/swagger/v1/swagger.json",
+        "Status":  200,
+        "Expected":  200,
+        "Passed":  true,
+        "ContentType":  "application/json; charset=utf-8",
+        "Body":  "(see openapi.json when successful)"
+    },
+    {
+        "Name":  "protected-customers",
+        "Method":  "GET",
+        "Path":  "/api/customers",
+        "Status":  401,
+        "Expected":  401,
+        "Passed":  true,
+        "ContentType":  "",
+        "Body":  ""
+    },
+    {
+        "Name":  "refresh-without-token",
+        "Method":  "POST",
+        "Path":  "/api/auth/refresh-access-token",
+        "Status":  400,
+        "Expected":  400,
+        "Passed":  true,
+        "ContentType":  "application/problem+json; charset=utf-8",
+        "Body":  "{\"type\":\"https://tools.ietf.org/html/rfc9110#section-15.5.1\",\"title\":\"Bad Request\",\"status\":400,\"traceId\":\"00-d56e8fc842ec2497f0dab6bd23c50c84-af1e3c0595931e66-00\"}"
+    }
+]

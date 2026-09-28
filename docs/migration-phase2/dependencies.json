@@ -1,0 +1,241 @@
+﻿{
+  "version": 1,
+  "parameters": "--include-transitive",
+  "projects": [
+    {
+      "path": "C:/Programs/negosuite/negosuite-api-v2/negosuite-api.csproj",
+      "frameworks": [
+        {
+          "framework": "net10.0",
+          "topLevelPackages": [
+            {
+              "id": "AWSSDK.S3",
+              "requestedVersion": "3.7.511.8",
+              "resolvedVersion": "3.7.511.8"
+            },
+            {
+              "id": "Microsoft.AspNetCore.Authentication.JwtBearer",
+              "requestedVersion": "10.0.12",
+              "resolvedVersion": "10.0.12"
+            },
+            {
+              "id": "Microsoft.EntityFrameworkCore.Relational",
+              "requestedVersion": "10.0.12",
+              "resolvedVersion": "10.0.12"
+            },
+            {
+              "id": "Microsoft.EntityFrameworkCore.Tools",
+              "requestedVersion": "10.0.12",
+              "resolvedVersion": "10.0.12"
+            },
+            {
+              "id": "MySql.EntityFrameworkCore",
+              "requestedVersion": "10.0.9",
+              "resolvedVersion": "10.0.9"
+            },
+            {
+              "id": "Newtonsoft.Json",
+              "requestedVersion": "13.0.4",
+              "resolvedVersion": "13.0.4"
+            },
+            {
+              "id": "Swashbuckle.AspNetCore",
+              "requestedVersion": "10.2.3",
+              "resolvedVersion": "10.2.3"
+            }
+          ],
+          "transitivePackages": [
+            {
+              "id": "AWSSDK.Core",
+              "resolvedVersion": "3.7.501.1"
+            },
+            {
+              "id": "BouncyCastle.Cryptography",
+              "resolvedVersion": "2.6.2"
+            },
+            {
+              "id": "Google.Protobuf",
+              "resolvedVersion": "3.35.0"
+            },
+            {
+              "id": "Humanizer.Core",
+              "resolvedVersion": "2.14.1"
+            },
+            {
+              "id": "K4os.Compression.LZ4",
+              "resolvedVersion": "1.3.8"
+            },
+            {
+              "id": "K4os.Compression.LZ4.Streams",
+              "resolvedVersion": "1.3.8"
+            },
+            {
+              "id": "K4os.Hash.xxHash",
+              "resolvedVersion": "1.0.8"
+            },
+            {
+              "id": "Microsoft.Bcl.Cryptography",
+              "resolvedVersion": "10.0.2"
+            },
+            {
+              "id": "Microsoft.Build.Framework",
+              "resolvedVersion": "18.0.2"
+            },
+            {
+              "id": "Microsoft.CodeAnalysis.Analyzers",
+              "resolvedVersion": "3.11.0"
+            },
+            {
+              "id": "Microsoft.CodeAnalysis.Common",
+              "resolvedVersion": "5.0.0"
+            },
+            {
+              "id": "Microsoft.CodeAnalysis.CSharp",
+              "resolvedVersion": "5.0.0"
+            },
+            {
+              "id": "Microsoft.CodeAnalysis.CSharp.Workspaces",
+              "resolvedVersion": "5.0.0"
+            },
+            {
+              "id": "Microsoft.CodeAnalysis.Workspaces.Common",
+              "resolvedVersion": "5.0.0"
+            },
+            {
+              "id": "Microsoft.CodeAnalysis.Workspaces.MSBuild",
+              "resolvedVersion": "5.0.0"
+            },
+            {
+              "id": "Microsoft.EntityFrameworkCore",
+              "resolvedVersion": "10.0.12"
+            },
+            {
+              "id": "Microsoft.EntityFrameworkCore.Abstractions",
+              "resolvedVersion": "10.0.12"
+            },
+            {
+              "id": "Microsoft.EntityFrameworkCore.Analyzers",
+              "resolvedVersion": "10.0.12"
+            },
+            {
+              "id": "Microsoft.EntityFrameworkCore.Design",
+              "resolvedVersion": "10.0.12"
+            },
+            {
+              "id": "Microsoft.Extensions.ApiDescription.Server",
+              "resolvedVersion": "10.0.0"
+            },
+            {
+              "id": "Microsoft.Extensions.DependencyModel",
+              "resolvedVersion": "10.0.12"
+            },
+            {
+              "id": "Microsoft.IdentityModel.Abstractions",
+              "resolvedVersion": "8.19.2"
+            },
+            {
+              "id": "Microsoft.IdentityModel.JsonWebTokens",
+              "resolvedVersion": "8.19.2"
+            },
+            {
+              "id": "Microsoft.IdentityModel.Logging",
+              "resolvedVersion": "8.19.2"
+            },
+            {
+              "id": "Microsoft.IdentityModel.Protocols",
+              "resolvedVersion": "8.19.2"
+            },
+            {
+              "id": "Microsoft.IdentityModel.Protocols.OpenIdConnect",
+              "resolvedVersion": "8.19.2"
+            },
+            {
+              "id": "Microsoft.IdentityModel.Tokens",
+              "resolvedVersion": "8.19.2"
+            },
+            {
+              "id": "Microsoft.OpenApi",
+              "resolvedVersion": "2.7.5"
+            },
+            {
+              "id": "Microsoft.VisualStudio.SolutionPersistence",
+              "resolvedVersion": "1.0.52"
+            },
+            {
+              "id": "Mono.TextTemplating",
+              "resolvedVersion": "3.0.0"
+            },
+            {
+              "id": "MySql.Data",
+              "resolvedVersion": "26.7.0"
+            },
+            {
+              "id": "Swashbuckle.AspNetCore.Swagger",
+              "resolvedVersion": "10.2.3"
+            },
+            {
+              "id": "Swashbuckle.AspNetCore.SwaggerGen",
+              "resolvedVersion": "10.2.3"
+            },
+            {
+              "id": "Swashbuckle.AspNetCore.SwaggerUI",
+              "resolvedVersion": "10.2.3"
+            },
+            {
+              "id": "System.CodeDom",
+              "resolvedVersion": "6.0.0"
+            },
+            {
+              "id": "System.Composition",
+              "resolvedVersion": "9.0.0"
+            },
+            {
+              "id": "System.Composition.AttributedModel",
+              "resolvedVersion": "9.0.0"
+            },
+            {
+              "id": "System.Composition.Convention",
+              "resolvedVersion": "9.0.0"
+            },
+            {
+              "id": "System.Composition.Hosting",
+              "resolvedVersion": "9.0.0"
+            },
+            {
+              "id": "System.Composition.Runtime",
+              "resolvedVersion": "9.0.0"
+            },
+            {
+              "id": "System.Composition.TypedParts",
+              "resolvedVersion": "9.0.0"
+            },
+            {
+              "id": "System.Configuration.ConfigurationManager",
+              "resolvedVersion": "10.0.8"
+            },
+            {
+              "id": "System.IdentityModel.Tokens.Jwt",
+              "resolvedVersion": "8.19.2"
+            },
+            {
+              "id": "System.Security.Cryptography.ProtectedData",
+              "resolvedVersion": "10.0.8"
+            },
+            {
+              "id": "System.Security.Permissions",
+              "resolvedVersion": "10.0.8"
+            },
+            {
+              "id": "System.Windows.Extensions",
+              "resolvedVersion": "10.0.8"
+            },
+            {
+              "id": "ZstdSharp.Port",
+              "resolvedVersion": "0.8.8"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

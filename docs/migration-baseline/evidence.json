@@ -1,0 +1,23 @@
+﻿{
+    "capturedDate":  "2026-09-25",
+    "sourceCommit":  "ba95f06c6fad0f51072a185eac234fe6f4743e54",
+    "framework":  "net6.0",
+    "buildSdk":  "6.0.428",
+    "defaultSdk":  "10.0.203",
+    "aspNetCoreRuntime":  "6.0.36",
+    "buildWarnings":  4,
+    "buildErrors":  0,
+    "httpChecksPassed":  4,
+    "apiPaths":  135,
+    "apiOperations":  236,
+    "schemas":  59,
+    "directPackages":  9,
+    "transitivePackages":  189,
+    "vulnerablePackages":  12,
+    "databaseVersion":  "8.0.46",
+    "databaseScope":  "configured loopback database, not verified deployed environment",
+    "tablesAndViews":  67,
+    "visibleRoutines":  0,
+    "requiredRoutineNames":  26,
+    "phase1Complete":  false
+}

@@ -1,0 +1,1425 @@
+﻿{
+    "BaselineOperations":  236,
+    "CandidateOperations":  236,
+    "AddedOperations":  [
+
+                        ],
+    "RemovedOperations":  [
+
+                          ],
+    "BaselineSchemas":  59,
+    "CandidateSchemas":  59,
+    "LeafDifferences":  [
+                            {
+                                "Path":  "/openapi",
+                                "Before":  "\"3.0.1\"",
+                                "After":  "\"3.0.4\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1account-categories/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1account-categories/post/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1account-categories~1{id}/delete/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1account-categories~1{id}/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1account-categories~1{id}/put/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1accounts/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1accounts/post/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1accounts~1{id}/delete/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1accounts~1{id}/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1accounts~1{id}/put/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1accounts~1header/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1accounts~1link/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1ai~1query/post/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1ai~1test/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1auth~1app-version/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1auth~1change-password/post/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1auth~1metabase-token/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1auth~1refresh-access-token/post/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1auth~1reset-password/post/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1auth~1sign-in/post/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1bill-payments/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1bill-payments/post/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1bill-payments~1{id}/delete/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1bill-payments~1{id}/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1bill-payments~1{id}/put/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1bills/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1bills/post/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1bills~1{id}/delete/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1bills~1{id}/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1bills~1{id}/put/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1chats/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1chats~1{id}/delete/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1chats~1{id}/put/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1chats~1messages/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1city-municipalities/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1city-municipalities/post/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1city-municipalities~1{id}/delete/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1city-municipalities~1{id}/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1city-municipalities~1{id}/put/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1configs/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1configs/post/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1configs~1{id}/delete/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1configs~1{id}/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1configs~1{id}/put/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1configs~1payment-adjustment-type~1{id}/put/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1configs~1template/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1countries/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1countries/post/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1countries~1{id}/delete/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1countries~1{id}/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1countries~1{id}/put/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1currencies/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1currencies/post/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1currencies~1{id}/delete/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1currencies~1{id}/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1currencies~1{id}/put/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1currencies~1base/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1customers/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1customers/post/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1customers~1{id}/delete/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1customers~1{id}/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1customers~1{id}/put/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1discount-types/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1discount-types/post/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1discount-types~1{id}/delete/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1discount-types~1{id}/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1discount-types~1{id}/put/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1discount-types~1many/post/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1download-apk/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1email/post/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1email~1email-confirmation/post/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1email~1log~1{uuid}/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1email~1member-invite/post/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1email~1password-reset/post/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1expense-payments/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1expense-payments/post/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1expense-payments~1{id}/delete/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1expense-payments~1{id}/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1expense-payments~1{id}/put/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1financial-reports~1gl-details/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1financial-reports~1gl-summary/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1financial-reports~1income-statement/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1financial-reports~1journal-transactions/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1financial-reports~1journal-transactions-rc/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1financial-reports~1trial-balance/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1general-journals/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1general-journals/post/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1general-journals~1{id}/delete/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1general-journals~1{id}/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1general-journals~1{id}/put/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1industries/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1industries/post/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1industries~1{id}/delete/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1industries~1{id}/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1industries~1{id}/put/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1inventory-adjustments/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1inventory-adjustments/post/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1inventory-adjustments~1{id}/delete/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1inventory-adjustments~1{id}/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1inventory-adjustments~1{id}/put/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1inventory-locations/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1inventory-locations/post/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1inventory-locations~1{id}/delete/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1inventory-locations~1{id}/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1inventory-locations~1{id}/put/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1inventory-reports~1inventory-by-location/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1inventory-reports~1inventory-transactions/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1inventory-reports~1low-inventory/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1inventory-reports~1stock-summary/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1item-categories/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1item-categories/post/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1item-categories~1{id}/delete/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1item-categories~1{id}/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1item-categories~1{id}/put/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1items/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1items/post/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1items~1{id}/delete/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1items~1{id}/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1items~1{id}/put/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1items~1average-cost~1{id}/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1items~1units/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1journal-entries~1unapplied-ar-credits/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1journal-entries~1unapplied-ar-credits~1{id}/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1journal-entries~1unpaid-bills/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1journal-entries~1unpaid-invoices/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1NavigationItems/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1NavigationItems/post/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1NavigationItems~1{id}/delete/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1NavigationItems~1{id}/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1NavigationItems~1{id}/put/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1payable-reports~1aging-details/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1payable-reports~1aging-summary/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1payable-reports~1supplier-balances/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1payable-reports~1supplier-balances-rc/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1payment-modes/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1payment-modes/post/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1payment-modes~1{id}/delete/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1payment-modes~1{id}/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1payment-modes~1{id}/put/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1payments/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1payments/post/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1payments~1{id}/delete/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1payments~1{id}/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1payments~1{id}/put/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1payments~1bill/post/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1payments~1bill~1{id}/delete/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1payments~1bill~1{id}/put/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1payment-terms/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1payment-terms/post/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1payment-terms~1{id}/delete/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1payment-terms~1{id}/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1payment-terms~1{id}/put/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1receivable-reports~1aging-details/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1receivable-reports~1aging-details-rc/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1receivable-reports~1aging-summary/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1receivable-reports~1aging-summary-rc/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1receivable-reports~1customer-balances/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1receivable-reports~1customer-balances-rc/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1receiving-reports/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1receiving-reports/post/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1receiving-reports~1{id}/delete/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1receiving-reports~1{id}/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1receiving-reports~1{id}/put/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1responsibility-centers/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1responsibility-centers/post/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1responsibility-centers~1{id}/delete/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1responsibility-centers~1{id}/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1responsibility-centers~1{id}/put/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1responsibility-centers~1type/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1responsibility-center-types/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1responsibility-center-types/post/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1responsibility-center-types~1{id}/delete/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1responsibility-center-types~1{id}/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1responsibility-center-types~1{id}/put/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1responsibility-center-types~1many/post/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1sales-invoice-payments/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1sales-invoice-payments/post/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1sales-invoice-payments~1{id}/delete/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1sales-invoice-payments~1{id}/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1sales-invoice-payments~1{id}/put/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1sales-invoices/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1sales-invoices/post/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1sales-invoices~1{id}/delete/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1sales-invoices~1{id}/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1sales-invoices~1{id}/put/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1sales-receipts/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1sales-receipts/post/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1sales-receipts~1{id}/delete/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1sales-receipts~1{id}/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1sales-receipts~1{id}/put/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1sales-reports~1sales-by-customer/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1sales-reports~1sales-by-item/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1sales-reports~1sales-monthly-trend/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1sales-reports~1sales-transaction-details-rc/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1sales-reports~1sales-transactions/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1sales-reports~1sales-transactions-rc/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1stock-issuances/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1stock-issuances/post/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1stock-issuances~1{id}/delete/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1stock-issuances~1{id}/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1stock-issuances~1{id}/put/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1stock-transfers/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1stock-transfers/post/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1stock-transfers~1{id}/delete/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1stock-transfers~1{id}/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1stock-transfers~1{id}/put/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1subscription-plans/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1suppliers/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1suppliers/post/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1suppliers~1{id}/delete/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1suppliers~1{id}/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1suppliers~1{id}/put/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1tax-rates/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1tax-rates/post/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1tax-rates~1{id}/delete/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1tax-rates~1{id}/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1tax-rates~1{id}/put/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1tax-rates~1many/post/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1user-roles/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1user-roles/post/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1user-roles~1{id}/delete/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1user-roles~1{id}/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1user-roles~1{id}/put/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1users/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1users/post/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1users~1{id}/delete/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1users~1{id}/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1users~1{id}/put/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1users~1config/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1users~1config-can-add/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1users~1new-account/post/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1users~1roles/get/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1users~1update-config/put/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1users~1update-config-template/put/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1users~1update-role/put/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/paths/~1api~1users~1update-ui-config/put/responses/200/description",
+                                "Before":  "\"Success\"",
+                                "After":  "\"OK\""
+                            },
+                            {
+                                "Path":  "/tags/0/name",
+                                "Before":  null,
+                                "After":  "\"AccountCategories\""
+                            },
+                            {
+                                "Path":  "/tags/1/name",
+                                "Before":  null,
+                                "After":  "\"Accounts\""
+                            },
+                            {
+                                "Path":  "/tags/10/name",
+                                "Before":  null,
+                                "After":  "\"Countries\""
+                            },
+                            {
+                                "Path":  "/tags/11/name",
+                                "Before":  null,
+                                "After":  "\"Currencies\""
+                            },
+                            {
+                                "Path":  "/tags/12/name",
+                                "Before":  null,
+                                "After":  "\"Customers\""
+                            },
+                            {
+                                "Path":  "/tags/13/name",
+                                "Before":  null,
+                                "After":  "\"DiscountTypes\""
+                            },
+                            {
+                                "Path":  "/tags/14/name",
+                                "Before":  null,
+                                "After":  "\"Email\""
+                            },
+                            {
+                                "Path":  "/tags/15/name",
+                                "Before":  null,
+                                "After":  "\"ExpensePayments\""
+                            },
+                            {
+                                "Path":  "/tags/16/name",
+                                "Before":  null,
+                                "After":  "\"FinancialReports\""
+                            },
+                            {
+                                "Path":  "/tags/17/name",
+                                "Before":  null,
+                                "After":  "\"GeneralJournals\""
+                            },
+                            {
+                                "Path":  "/tags/18/name",
+                                "Before":  null,
+                                "After":  "\"Industries\""
+                            },
+                            {
+                                "Path":  "/tags/19/name",
+                                "Before":  null,
+                                "After":  "\"InventoryAdjustments\""
+                            },
+                            {
+                                "Path":  "/tags/2/name",
+                                "Before":  null,
+                                "After":  "\"AI\""
+                            },
+                            {
+                                "Path":  "/tags/20/name",
+                                "Before":  null,
+                                "After":  "\"InventoryLocations\""
+                            },
+                            {
+                                "Path":  "/tags/21/name",
+                                "Before":  null,
+                                "After":  "\"InventoryReports\""
+                            },
+                            {
+                                "Path":  "/tags/22/name",
+                                "Before":  null,
+                                "After":  "\"ItemCategories\""
+                            },
+                            {
+                                "Path":  "/tags/23/name",
+                                "Before":  null,
+                                "After":  "\"Items\""
+                            },
+                            {
+                                "Path":  "/tags/24/name",
+                                "Before":  null,
+                                "After":  "\"JournalEntries\""
+                            },
+                            {
+                                "Path":  "/tags/25/name",
+                                "Before":  null,
+                                "After":  "\"NavigationItems\""
+                            },
+                            {
+                                "Path":  "/tags/26/name",
+                                "Before":  null,
+                                "After":  "\"PayableReports\""
+                            },
+                            {
+                                "Path":  "/tags/27/name",
+                                "Before":  null,
+                                "After":  "\"PaymentModes\""
+                            },
+                            {
+                                "Path":  "/tags/28/name",
+                                "Before":  null,
+                                "After":  "\"Payments\""
+                            },
+                            {
+                                "Path":  "/tags/29/name",
+                                "Before":  null,
+                                "After":  "\"PaymentTerms\""
+                            },
+                            {
+                                "Path":  "/tags/3/name",
+                                "Before":  null,
+                                "After":  "\"AppVersion\""
+                            },
+                            {
+                                "Path":  "/tags/30/name",
+                                "Before":  null,
+                                "After":  "\"ReceivableReports\""
+                            },
+                            {
+                                "Path":  "/tags/31/name",
+                                "Before":  null,
+                                "After":  "\"ReceivingReports\""
+                            },
+                            {
+                                "Path":  "/tags/32/name",
+                                "Before":  null,
+                                "After":  "\"ResponsibilityCenters\""
+                            },
+                            {
+                                "Path":  "/tags/33/name",
+                                "Before":  null,
+                                "After":  "\"ResponsibilityCenterTypes\""
+                            },
+                            {
+                                "Path":  "/tags/34/name",
+                                "Before":  null,
+                                "After":  "\"SalesInvoicePayments\""
+                            },
+                            {
+                                "Path":  "/tags/35/name",
+                                "Before":  null,
+                                "After":  "\"SalesInvoices\""
+                            },
+                            {
+                                "Path":  "/tags/36/name",
+                                "Before":  null,
+                                "After":  "\"SalesReceipts\""
+                            },
+                            {
+                                "Path":  "/tags/37/name",
+                                "Before":  null,
+                                "After":  "\"SalesReports\""
+                            },
+                            {
+                                "Path":  "/tags/38/name",
+                                "Before":  null,
+                                "After":  "\"StockIssuances\""
+                            },
+                            {
+                                "Path":  "/tags/39/name",
+                                "Before":  null,
+                                "After":  "\"StockTransfers\""
+                            },
+                            {
+                                "Path":  "/tags/4/name",
+                                "Before":  null,
+                                "After":  "\"Auth\""
+                            },
+                            {
+                                "Path":  "/tags/40/name",
+                                "Before":  null,
+                                "After":  "\"SubscriptionPlans\""
+                            },
+                            {
+                                "Path":  "/tags/41/name",
+                                "Before":  null,
+                                "After":  "\"Suppliers\""
+                            },
+                            {
+                                "Path":  "/tags/42/name",
+                                "Before":  null,
+                                "After":  "\"TaxRates\""
+                            },
+                            {
+                                "Path":  "/tags/43/name",
+                                "Before":  null,
+                                "After":  "\"UserRole\""
+                            },
+                            {
+                                "Path":  "/tags/44/name",
+                                "Before":  null,
+                                "After":  "\"Users\""
+                            },
+                            {
+                                "Path":  "/tags/5/name",
+                                "Before":  null,
+                                "After":  "\"BillPayments\""
+                            },
+                            {
+                                "Path":  "/tags/6/name",
+                                "Before":  null,
+                                "After":  "\"Bills\""
+                            },
+                            {
+                                "Path":  "/tags/7/name",
+                                "Before":  null,
+                                "After":  "\"Chat\""
+                            },
+                            {
+                                "Path":  "/tags/8/name",
+                                "Before":  null,
+                                "After":  "\"CityMunicipalities\""
+                            },
+                            {
+                                "Path":  "/tags/9/name",
+                                "Before":  null,
+                                "After":  "\"Configs\""
+                            }
+                        ],
+    "Note":  "Metadata comparison only; empty containers, property order and actual database response behavior are not compared."
+}

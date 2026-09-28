@@ -1,0 +1,19 @@
+﻿MSBuild version 17.3.4+a400405ba for .NET
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+C:\Programs\negosuite\negosuite-api-v2\Controllers\DiscountTypesController.cs(129,38): warning CS0168: The variable 'ex' is declared but never used [C:\Programs\negosuite\negosuite-api-v2\negosuite-api.csproj]
+C:\Programs\negosuite\negosuite-api-v2\Controllers\TaxRatesController.cs(130,38): warning CS0168: The variable 'ex' is declared but never used [C:\Programs\negosuite\negosuite-api-v2\negosuite-api.csproj]
+C:\Programs\negosuite\negosuite-api-v2\Controllers\PayableReportsController.cs(21,30): warning CS0414: The field 'PayableReportsController.AGING_BY_BILL_DUE_DATE' is assigned but its value is never used [C:\Programs\negosuite\negosuite-api-v2\negosuite-api.csproj]
+C:\Programs\negosuite\negosuite-api-v2\Controllers\ReceivableReportsController.cs(20,30): warning CS0414: The field 'ReceivableReportsController.AGING_BY_INVOICE_DUE_DATE' is assigned but its value is never used [C:\Programs\negosuite\negosuite-api-v2\negosuite-api.csproj]
+  negosuite-api -> C:\Programs\negosuite\negosuite-api-v2\bin\phase1-baseline\app\negosuite-api.dll
+
+Build succeeded.
+
+C:\Programs\negosuite\negosuite-api-v2\Controllers\DiscountTypesController.cs(129,38): warning CS0168: The variable 'ex' is declared but never used [C:\Programs\negosuite\negosuite-api-v2\negosuite-api.csproj]
+C:\Programs\negosuite\negosuite-api-v2\Controllers\TaxRatesController.cs(130,38): warning CS0168: The variable 'ex' is declared but never used [C:\Programs\negosuite\negosuite-api-v2\negosuite-api.csproj]
+C:\Programs\negosuite\negosuite-api-v2\Controllers\PayableReportsController.cs(21,30): warning CS0414: The field 'PayableReportsController.AGING_BY_BILL_DUE_DATE' is assigned but its value is never used [C:\Programs\negosuite\negosuite-api-v2\negosuite-api.csproj]
+C:\Programs\negosuite\negosuite-api-v2\Controllers\ReceivableReportsController.cs(20,30): warning CS0414: The field 'ReceivableReportsController.AGING_BY_INVOICE_DUE_DATE' is assigned but its value is never used [C:\Programs\negosuite\negosuite-api-v2\negosuite-api.csproj]
+    4 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:01.70

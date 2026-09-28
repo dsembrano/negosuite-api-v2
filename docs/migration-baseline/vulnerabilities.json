@@ -1,0 +1,183 @@
+﻿{
+  "version": 1,
+  "parameters": "--vulnerable --include-transitive",
+  "sources": [
+    "https://api.nuget.org/v3/index.json"
+  ],
+  "projects": [
+    {
+      "path": "C:/Programs/negosuite/negosuite-api-v2/negosuite-api.csproj",
+      "frameworks": [
+        {
+          "framework": "net6.0",
+          "transitivePackages": [
+            {
+              "id": "MessagePack",
+              "resolvedVersion": "2.1.152",
+              "vulnerabilities": [
+                {
+                  "severity": "Moderate",
+                  "advisoryurl": "https://github.com/advisories/GHSA-4qm4-8hg2-g2xm"
+                },
+                {
+                  "severity": "High",
+                  "advisoryurl": "https://github.com/advisories/GHSA-hv8m-jj95-wg3x"
+                },
+                {
+                  "severity": "High",
+                  "advisoryurl": "https://github.com/advisories/GHSA-vh6j-jc39-fggf"
+                },
+                {
+                  "severity": "Moderate",
+                  "advisoryurl": "https://github.com/advisories/GHSA-2f33-pr97-265q"
+                },
+                {
+                  "severity": "Moderate",
+                  "advisoryurl": "https://github.com/advisories/GHSA-v72x-2h86-7f8m"
+                },
+                {
+                  "severity": "Moderate",
+                  "advisoryurl": "https://github.com/advisories/GHSA-2x83-8g95-xh59"
+                },
+                {
+                  "severity": "Moderate",
+                  "advisoryurl": "https://github.com/advisories/GHSA-cj9g-3mj2-g8vv"
+                },
+                {
+                  "severity": "Moderate",
+                  "advisoryurl": "https://github.com/advisories/GHSA-wfr3-xj75-pfwh"
+                },
+                {
+                  "severity": "Moderate",
+                  "advisoryurl": "https://github.com/advisories/GHSA-w567-gjr2-hm5j"
+                },
+                {
+                  "severity": "Moderate",
+                  "advisoryurl": "https://github.com/advisories/GHSA-cxmj-83gh-fp49"
+                },
+                {
+                  "severity": "Moderate",
+                  "advisoryurl": "https://github.com/advisories/GHSA-q2h6-ghwm-5qm8"
+                },
+                {
+                  "severity": "Moderate",
+                  "advisoryurl": "https://github.com/advisories/GHSA-qhmf-xw27-6rqr"
+                }
+              ]
+            },
+            {
+              "id": "Microsoft.Data.SqlClient",
+              "resolvedVersion": "2.1.4",
+              "vulnerabilities": [
+                {
+                  "severity": "High",
+                  "advisoryurl": "https://github.com/advisories/GHSA-98g6-xh36-x2p7"
+                }
+              ]
+            },
+            {
+              "id": "Microsoft.Extensions.Caching.Memory",
+              "resolvedVersion": "6.0.1",
+              "vulnerabilities": [
+                {
+                  "severity": "High",
+                  "advisoryurl": "https://github.com/advisories/GHSA-qj66-m88j-hmgj"
+                }
+              ]
+            },
+            {
+              "id": "Microsoft.IdentityModel.JsonWebTokens",
+              "resolvedVersion": "6.10.0",
+              "vulnerabilities": [
+                {
+                  "severity": "Moderate",
+                  "advisoryurl": "https://github.com/advisories/GHSA-59j7-ghrg-fj52"
+                }
+              ]
+            },
+            {
+              "id": "NuGet.Common",
+              "resolvedVersion": "6.3.1",
+              "vulnerabilities": [
+                {
+                  "severity": "High",
+                  "advisoryurl": "https://github.com/advisories/GHSA-6qmf-mmc7-6c2p"
+                }
+              ]
+            },
+            {
+              "id": "NuGet.Packaging",
+              "resolvedVersion": "6.3.1",
+              "vulnerabilities": [
+                {
+                  "severity": "Critical",
+                  "advisoryurl": "https://github.com/advisories/GHSA-68w7-72jg-6qpp"
+                }
+              ]
+            },
+            {
+              "id": "NuGet.Protocol",
+              "resolvedVersion": "6.3.1",
+              "vulnerabilities": [
+                {
+                  "severity": "High",
+                  "advisoryurl": "https://github.com/advisories/GHSA-6qmf-mmc7-6c2p"
+                }
+              ]
+            },
+            {
+              "id": "System.Formats.Asn1",
+              "resolvedVersion": "5.0.0",
+              "vulnerabilities": [
+                {
+                  "severity": "High",
+                  "advisoryurl": "https://github.com/advisories/GHSA-447r-wph3-92pm"
+                }
+              ]
+            },
+            {
+              "id": "System.IdentityModel.Tokens.Jwt",
+              "resolvedVersion": "6.10.0",
+              "vulnerabilities": [
+                {
+                  "severity": "Moderate",
+                  "advisoryurl": "https://github.com/advisories/GHSA-59j7-ghrg-fj52"
+                }
+              ]
+            },
+            {
+              "id": "System.Net.Http",
+              "resolvedVersion": "4.3.0",
+              "vulnerabilities": [
+                {
+                  "severity": "High",
+                  "advisoryurl": "https://github.com/advisories/GHSA-7jgj-8wvc-jh57"
+                }
+              ]
+            },
+            {
+              "id": "System.Text.Json",
+              "resolvedVersion": "6.0.0",
+              "vulnerabilities": [
+                {
+                  "severity": "High",
+                  "advisoryurl": "https://github.com/advisories/GHSA-8g4q-xg66-9fp4"
+                }
+              ]
+            },
+            {
+              "id": "System.Text.RegularExpressions",
+              "resolvedVersion": "4.3.0",
+              "vulnerabilities": [
+                {
+                  "severity": "High",
+                  "advisoryurl": "https://github.com/advisories/GHSA-cmhx-cq75-c4mj"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
