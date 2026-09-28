@@ -6,7 +6,9 @@
     "SameResults":  true,
     "RequiredComparisonsPresent":  true,
     "SameSerializedResponses":  false,
+    "SameReportResults":  true,
+    "AllReportSamplesPassed":  true,
     "Passed":  true,
-    "Scope":  "Customer and sampled journal values/counts/totals plus independent SQL parity. Normalization sorts top-level rows by ID, sorts object keys and removes decimal trailing zero differences. Raw hashes remain in readiness reports. Not full Phase 5 acceptance.",
+    "Scope":  "Customer/journal SQL parity plus seven report controller samples. Report hashes compare sorted multisets of normalized rows. Normalization sorts top-level rows by ID, sorts object keys and removes decimal trailing zero differences. Raw hashes remain in readiness reports. Not full Phase 5 acceptance.",
     "Caveat":  "Sequential read-only runs against the development database; concurrent changes can cause differences. No raw records are persisted."
 }

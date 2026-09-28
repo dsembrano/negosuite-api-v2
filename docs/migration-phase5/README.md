@@ -1,49 +1,33 @@
-# Phase 5: development database verification
+# Phase 5: completed
 
-Status: read-only verification implemented; full business regression blocked. Verified on September 28, 2026 against the configured localhost MySQL 8.0.46 database. A separate database is not required for these checks. No database rows or schema were changed, and no backup was needed for this read-only run.
+Closed September 28, 2026 on the basis of passing automated comparisons and user acceptance of local transaction testing. The localhost database contains all 26 required procedures. Presence and definition visibility are separate fields: hidden definitions do not mean a procedure is missing. EXECUTE is present in the returned grants; the report calls also exercise execution access.
 
-## Results
+The user accepted four schema gaps as absent in production: `arpaymentdetail`, `debtor.SLType`, `debtortype.SLType`, and `vcitymunicipality`. They remain visible in evidence but do not block readiness. Other gaps still block. This acceptance does not prove those application paths are unused.
 
-| Check | Result |
-| --- | --- |
-| Existing database | 67 tables; 279,027 journal entries |
-| EF materialization | Config, user, customer, invoice, bill and journal reads passed |
-| Customer controller | 4,881 active customers for the selected tenant; count matches independent SQL |
-| Journal controller | Four rows for June 24–30, 2026; debit and credit each 102,750.1700; matches independent SQL |
-| .NET 6 vs .NET 10 | Both selected controller results match after row ordering and numeric normalization |
-| Inventory materialization | Failed: MySQL 1146, missing mapped view |
-| Required procedures | All 26 definition checks returned MySQL 1305; no routines visible |
-| Account grants | No EXECUTE or SHOW_ROUTINE grant found in returned grant text; effective privileges need administrator verification |
-
-Comparison used historical commit `ba95f06c6fad0f51072a185eac234fe6f4743e54` on .NET 6.0.36 and current source on .NET 10.0.7. Customer serialized fingerprints match. Journal debit/credit serialized fingerprints differ, but normalized numeric values match; this is not a byte-for-byte response compatibility claim.
-
-Eight mapped schema gaps were found:
-
-- Tables: `arpaymentdetail`, `chatmessage`, `chatsession`.
-- Columns: `debtor.SLType`, `debtortype.SLType`.
-- Views: `inventorytransaction`, `salestransaction`, `vcitymunicipality`.
-
-The database also has 13 future-dated journal rows. The sampled period excludes future dates; no data correction was attempted.
-
-Evidence: [current readiness](database-readiness.json), [.NET 6 readiness](net6-readiness.json), and [runtime comparison](net6-comparison.json). These snapshots contain counts, metadata and response hashes, without credentials or raw business records.
-
-## Repeat verification
+## Run
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Test-DevelopmentDatabase.ps1 -CompareNet6
 ```
 
-Omit `-CompareNet6` to check only the current application. The comparison requires SDK 6.0.428 and its runtime plus the historical commit in local Git history. The current verifier uses the SDK selected by `global.json`. Database configuration comes from local appsettings, the selected environment settings, and environment variables. The host must be localhost, 127.0.0.1 or ::1.
+Requires the current SDK, SDK 6.0.428/runtime 6, and historical commit `ba95f06c6fad0f51072a185eac234fe6f4743e54`. Configuration comes from local appsettings and environment overrides; only localhost targets are allowed. Reports are written under ignored `bin/phase5-verification`.
 
-The verifier sets the MySQL session to read-only and executes metadata and SELECT queries. It never calls stored procedures or writes data. Reports are generated under ignored `bin/phase5-verification`; the historical build is under ignored `bin/phase5-net6`. Exit 2 means database readiness is blocked; build or comparison failures are reported separately. Missing samples also prevent readiness. Normal application builds and tests do not execute this opt-in verifier.
+Seven fixed GET controller paths cover sales, purchases, receivables, payables, inventory, trial balance and general ledger. The sample uses the first configured tenant with journals, January 1 through its latest non-future posted journal date, and its configured AR/AP trade accounts. Missing, empty or failed samples prevent acceptance. Each report runs in a transaction on a session configured read-only and rolls back afterward. Creation, posting and view-generation procedures are excluded.
 
-Controller methods are invoked directly, so these checks do not exercise HTTP middleware, authentication or ownership enforcement. Comparisons run sequentially; concurrent development changes can produce differences. Normalization sorts root rows by ID and object property names and removes decimal trailing-zero differences. The saved readiness reports retain raw fingerprints. These limited comparisons do not prove posting, rollback, stock, tax, stored-procedure or complete financial compatibility.
+Both runtimes run the same verifier. Each report result is compared as a multiset of normalized row hashes, preserving duplicate rows while ignoring root row order, object key order and decimal trailing zeros. Nested array order remains significant. Counts and hashes are persisted; business rows and credentials are not. Customer/journal checks additionally compare counts and journal totals with independent SQL. The seven added report checks establish baseline parity, not independent accounting correctness.
 
-## Remaining work
+## Evidence and limits
 
-1. Obtain the authoritative current V1 schema export or migrations, including procedures and views. Available historical 2022 dumps do not supply the complete required definitions. Exporting this incomplete localhost schema alone cannot recover them.
-2. Review and apply the missing definitions and columns from that source, with a backup before changes. Have the database administrator verify routine existence and the application's required execution privileges.
-3. Rerun readiness and baseline comparisons.
-4. Before write-based regression, back up the development database and stop concurrent use. Exercise representative posting, reversal, rollback and inventory workflows with controlled fixtures and cleanup. Use a separate test schema if the development database must remain in use or retain its data untouched.
+See [current readiness](database-readiness.json), [.NET 6 readiness](net6-readiness.json), and [comparison](net6-comparison.json). The baseline is .NET 6.0.36 and the current local runtime is .NET 10.0.7.
 
-No replacement business routines, permission changes, guessed migrations or write tests were applied while these prerequisites remain unresolved.
+The controllers are called directly, so HTTP authentication, filters and tenant ownership enforcement are outside this test. Runs are sequential against shared development data; concurrent changes can cause mismatches. Procedure source remains hidden, and not all 26 procedures or filter combinations are exercised. Automated readiness alone is not full business acceptance; phase closure also relies on the user testing confirmation recorded below.
+
+## Completion record
+
+- User confirmed the local database backup was completed, sales/payment posting worked, the stored-procedure fix was tested, and subsequent testing looked satisfactory; requested Phase 5 closure.
+- Final automated comparison passed: all 26 required procedures present, no unaccepted schema gaps, customer/journal SQL checks passed, and seven populated report samples matched .NET 6 and .NET 10.
+- Targeted live check of `GetSalesByCustomer(16, '2026-09-01', '2026-09-30', '', '')` returned four customer rows. NULL array input also returned four rows. The underlying posted sample contained 24 transactions. Literal `[]` remains unsupported (MySQL 1064); the procedure accepts comma-separated IDs rather than a JSON-array literal.
+- The reference [procedure definition](../../Db/procedures/GetSalesByCustomer.sql) records the user-supplied body with the confirmed optional-filter correction. It is not an export of the hidden installed body and was not applied by the agent. Preserve the target definer/grants when deploying it.
+- Detailed manual case results and document IDs were not supplied. Forced-failure rollback and every cancellation/inventory scenario have not been independently verified by the agent. No new write workflows were executed during closure.
+
+Next phase: staging deployment and acceptance. Confirm environment configuration, run authenticated client smoke tests, include the procedure correction in the database deployment review, and verify backup/rollback readiness before production rollout. Production deployment is not part of Phase 5 closure.
