@@ -22,7 +22,7 @@
     <Compile Remove="tests\**\*.cs" />
     <Content Remove="tests\**;docs\**" />
     <None Remove="tests\**" />
-    <None Include=".github\workflows\digital-ocean-production.yml" />
+    <Content Update="appsettings*.json" CopyToPublishDirectory="Never" />
   </ItemGroup>
 
 </Project>

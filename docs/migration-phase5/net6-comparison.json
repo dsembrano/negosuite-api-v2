@@ -1,0 +1,12 @@
+﻿{
+    "BaselineCommit":  "ba95f06c6fad0f51072a185eac234fe6f4743e54",
+    "BaselineRuntime":  ".NET 6.0.36",
+    "CurrentRuntime":  ".NET 10.0.7",
+    "SameSample":  true,
+    "SameResults":  true,
+    "RequiredComparisonsPresent":  true,
+    "SameSerializedResponses":  false,
+    "Passed":  true,
+    "Scope":  "Customer and sampled journal values/counts/totals plus independent SQL parity. Normalization sorts top-level rows by ID, sorts object keys and removes decimal trailing zero differences. Raw hashes remain in readiness reports. Not full Phase 5 acceptance.",
+    "Caveat":  "Sequential read-only runs against the development database; concurrent changes can cause differences. No raw records are persisted."
+}

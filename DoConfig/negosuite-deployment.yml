@@ -22,11 +22,40 @@ spec:
       containers:
         - name: negosuite-api
           image: <IMAGE>
+          env:
+            - name: ASPNETCORE_ENVIRONMENT
+              value: Production
+            - name: ASPNETCORE_URLS
+              value: http://+:8080
           envFrom:
             - secretRef:
                 name: negosuite-api-secret
           ports:
-            - containerPort: 80
+            - name: http
+              containerPort: 8080
+          startupProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 5
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 3
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 20
+            timeoutSeconds: 3
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
           resources:
             requests:
               cpu: 100m
@@ -43,6 +72,6 @@ spec:
     - name: http
       protocol: TCP
       port: 80
-      targetPort: 80
+      targetPort: http
   selector:
     app: negosuite-api

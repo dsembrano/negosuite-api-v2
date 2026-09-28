@@ -1,0 +1,14 @@
+# Explicit allowlist: no local settings, secrets, database dumps, tests or build outputs.
+**
+!Dockerfile
+!.dockerignore
+!global.json
+!negosuite-api.csproj
+!Program.cs
+!Startup.cs
+!Controllers/
+!Controllers/**
+!Models/
+!Models/**
+!Services/
+!Services/**

@@ -1,0 +1,25 @@
+﻿{
+    "date":  "2026-09-28",
+    "releasePublish":  "passed",
+    "testsPassed":  13,
+    "testsFailed":  0,
+    "testsTotal":  14,
+    "mysqlTest":  "skipped, opt-in fixture not enabled this phase",
+    "dockerBuild":  "passed, final source",
+    "containerRuntime":  "10.0.12",
+    "containerUid":  1654,
+    "containerPort":  8080,
+    "containerChecks":  [
+                            "health 200",
+                            "anonymous customers 401",
+                            "production Swagger 404",
+                            "empty refresh 400",
+                            "non-root",
+                            "local settings and database artifacts excluded"
+                        ],
+    "kubernetesValidation":  "offline kubectl kustomize rendering; explicit namespace, ports, probes and renderer input checks",
+    "liveClusterValidation":  false,
+    "deployed":  false,
+    "githubWorkflowExecuted":  false,
+    "interactiveDebuggerExecuted":  false
+}

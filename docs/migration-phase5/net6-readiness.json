@@ -1,0 +1,301 @@
+{
+  "CapturedUtc": "2026-09-28T06:30:52.7365328Z",
+  "HostScope": "configured localhost database",
+  "Runtime": ".NET 6.0.36",
+  "ConfigurationEnvironment": "Development",
+  "ServerVersion": "8.0.46",
+  "Mode": "read-only; no CALL, DDL, inserts, updates or deletes executed",
+  "Privileges": {
+    "HasExecuteGrant": false,
+    "HasShowRoutineGrant": false,
+    "Note": "Grant-text indicators only; exact per-object access is checked below. No raw account grants are recorded."
+  },
+  "TableCount": 67,
+  "VisibleRoutines": [],
+  "RequiredRoutineChecks": [
+    {
+      "Name": "CreateUserConfig",
+      "Status": "server-reports-procedure-does-not-exist",
+      "ErrorCode": 1305
+    },
+    {
+      "Name": "CreateUserConfigFromTemplate",
+      "Status": "server-reports-procedure-does-not-exist",
+      "ErrorCode": 1305
+    },
+    {
+      "Name": "GetAccountRecap",
+      "Status": "server-reports-procedure-does-not-exist",
+      "ErrorCode": 1305
+    },
+    {
+      "Name": "GetBills",
+      "Status": "server-reports-procedure-does-not-exist",
+      "ErrorCode": 1305
+    },
+    {
+      "Name": "GetGeneralJournals",
+      "Status": "server-reports-procedure-does-not-exist",
+      "ErrorCode": 1305
+    },
+    {
+      "Name": "GetGeneralLedgerDetails",
+      "Status": "server-reports-procedure-does-not-exist",
+      "ErrorCode": 1305
+    },
+    {
+      "Name": "GetGeneralLedgerRecap",
+      "Status": "server-reports-procedure-does-not-exist",
+      "ErrorCode": 1305
+    },
+    {
+      "Name": "GetInventoryAdjustments",
+      "Status": "server-reports-procedure-does-not-exist",
+      "ErrorCode": 1305
+    },
+    {
+      "Name": "GetInventoryStockSummary",
+      "Status": "server-reports-procedure-does-not-exist",
+      "ErrorCode": 1305
+    },
+    {
+      "Name": "GetInventoryTransactions",
+      "Status": "server-reports-procedure-does-not-exist",
+      "ErrorCode": 1305
+    },
+    {
+      "Name": "GetJournalEntryBalancesByResponsibilityCenter",
+      "Status": "server-reports-procedure-does-not-exist",
+      "ErrorCode": 1305
+    },
+    {
+      "Name": "GetJournalEntryByResponsibilityCenter",
+      "Status": "server-reports-procedure-does-not-exist",
+      "ErrorCode": 1305
+    },
+    {
+      "Name": "GetJournalEntryRecapIS",
+      "Status": "server-reports-procedure-does-not-exist",
+      "ErrorCode": 1305
+    },
+    {
+      "Name": "GetPayments",
+      "Status": "server-reports-procedure-does-not-exist",
+      "ErrorCode": 1305
+    },
+    {
+      "Name": "GetPivotedInventoryWithJsonArray",
+      "Status": "server-reports-procedure-does-not-exist",
+      "ErrorCode": 1305
+    },
+    {
+      "Name": "GetReceivingReports",
+      "Status": "server-reports-procedure-does-not-exist",
+      "ErrorCode": 1305
+    },
+    {
+      "Name": "GetSalesByCustomer",
+      "Status": "server-reports-procedure-does-not-exist",
+      "ErrorCode": 1305
+    },
+    {
+      "Name": "GetSalesByItem",
+      "Status": "server-reports-procedure-does-not-exist",
+      "ErrorCode": 1305
+    },
+    {
+      "Name": "GetSalesInvoicePayments",
+      "Status": "server-reports-procedure-does-not-exist",
+      "ErrorCode": 1305
+    },
+    {
+      "Name": "GetSalesInvoices",
+      "Status": "server-reports-procedure-does-not-exist",
+      "ErrorCode": 1305
+    },
+    {
+      "Name": "GetSalesMonthlyTrend",
+      "Status": "server-reports-procedure-does-not-exist",
+      "ErrorCode": 1305
+    },
+    {
+      "Name": "GetSalesReceipts",
+      "Status": "server-reports-procedure-does-not-exist",
+      "ErrorCode": 1305
+    },
+    {
+      "Name": "GetSalesTransactionDetails",
+      "Status": "server-reports-procedure-does-not-exist",
+      "ErrorCode": 1305
+    },
+    {
+      "Name": "GetSalesTransactions",
+      "Status": "server-reports-procedure-does-not-exist",
+      "ErrorCode": 1305
+    },
+    {
+      "Name": "GetStockIssuances",
+      "Status": "server-reports-procedure-does-not-exist",
+      "ErrorCode": 1305
+    },
+    {
+      "Name": "GetStockTransfers",
+      "Status": "server-reports-procedure-does-not-exist",
+      "ErrorCode": 1305
+    }
+  ],
+  "MappedSchemaGaps": [
+    {
+      "Table": "arpaymentdetail",
+      "Column": "*",
+      "Issue": "missing-table"
+    },
+    {
+      "Table": "chatmessage",
+      "Column": "*",
+      "Issue": "missing-table"
+    },
+    {
+      "Table": "chatsession",
+      "Column": "*",
+      "Issue": "missing-table"
+    },
+    {
+      "Table": "debtor",
+      "Column": "SLType",
+      "Issue": "missing-column"
+    },
+    {
+      "Table": "debtortype",
+      "Column": "SLType",
+      "Issue": "missing-column"
+    },
+    {
+      "Table": "inventorytransaction",
+      "Column": "*",
+      "Issue": "missing-view"
+    },
+    {
+      "Table": "salestransaction",
+      "Column": "*",
+      "Issue": "missing-view"
+    },
+    {
+      "Table": "vcitymunicipality",
+      "Column": "*",
+      "Issue": "missing-view"
+    }
+  ],
+  "RowCounts": {
+    "config": 11,
+    "user": 40,
+    "customer": 5056,
+    "supplier": 242,
+    "salesinvoice": 19862,
+    "salesreceipt": 14006,
+    "bill": 3905,
+    "payment": 9330,
+    "journalentry": 279027
+  },
+  "FutureDatedJournalCount": 13,
+  "ReadOnlySample": {
+    "TenantId": 1,
+    "PeriodStart": "2026-06-24T00:00:00",
+    "PeriodEnd": "2026-06-30T23:59:59.999999",
+    "Selection": "first configured tenant with journals; latest seven posted-journal days between 2000-01-01 and today; future dates excluded"
+  },
+  "ControllerSqlComparisons": [
+    {
+      "Report": "journal-transactions",
+      "MatchesSql": true,
+      "Rows": 4,
+      "Debit": 102750.1700,
+      "Credit": 102750.1700,
+      "FieldFingerprints": {
+        "id": "21AB56EC3A91E5761385F2A5C74A8932E7195226582516F4BDDCEFA756332F00",
+        "journalDate": "9C7586DB1A483E16E94A2A3FE19143ADB113FACBBD7AE4E9186FB5E6F41413A9",
+        "referenceNo": "47DBAF7F444C8703ECEA07C23A07F8F0EBA7997FFEE772A4DD119B7DE43C51BE",
+        "accountId": "B5C990F25874C0BA9A49314361F1511DD6CE08B48551054A02816DA50F75B5E7",
+        "accountName": "DEC8CBC503D6DD7CF66070CE558C349C12336B471655DD13ADB971CD1543A000",
+        "customerId": "1AEEBF3D26013175FD00B326CBDC366EB02819296979827325AAD5A480A12884",
+        "customerName": "123516B3896F3CD7E39CF3BEF97EC8C41073B6B81BD6FDA54A44A778EE93120D",
+        "supplierId": "1AEEBF3D26013175FD00B326CBDC366EB02819296979827325AAD5A480A12884",
+        "supplierName": "123516B3896F3CD7E39CF3BEF97EC8C41073B6B81BD6FDA54A44A778EE93120D",
+        "nature": "2D5816DCEB13D6F63E5BCC866EFCC683B7EB746ACAF27D91D2E2C6550A334494",
+        "debit": "B002684DEBDA5A9176AE0B49AD71806693F106F7322B1A3A491E75FE373437B1",
+        "credit": "A589AC7FDCB62E9F76D22255A1079DAB975E117CF37FB19E8C99BC90C94263AA",
+        "amount": "9D320AE85B3E77BF32301ABD3401B5099376AF64CFC39AC9FD178EF298FA2E15",
+        "balance": "9D320AE85B3E77BF32301ABD3401B5099376AF64CFC39AC9FD178EF298FA2E15",
+        "source": "3801B133C9945A4BED2C36223874AC21DD9A52E332B604E4E1332E556B7B89B9",
+        "responsibilityCenterEntry": "F246B6D1825637CC2C80D00173AA9DDDEE34C970EC68077F9F455F7305DB1D2A",
+        "notes": "94426C2E2DEEF0B8986B105D67C98B36E7D481C6595A6675923079B26773D0B0",
+        "particular": "1AEEBF3D26013175FD00B326CBDC366EB02819296979827325AAD5A480A12884",
+        "payee": "1AEEBF3D26013175FD00B326CBDC366EB02819296979827325AAD5A480A12884",
+        "payor": "123516B3896F3CD7E39CF3BEF97EC8C41073B6B81BD6FDA54A44A778EE93120D",
+        "checkNo": "1AEEBF3D26013175FD00B326CBDC366EB02819296979827325AAD5A480A12884",
+        "sourceName": "87A98B17ECF068A6D6A557333F36EF988D4C47009222AF12DC83FFE9AC461E4C"
+      },
+      "NormalizedRowsSha256": "F75302BC08BA434DF6BEADE25529EEBCF5BC4398595763C7CF0016B19F3C0642",
+      "SortedResponseSha256": "543B376506FA6C390343EFAD9B164490B2C4727FC07A39FAFD61124F6689E703",
+      "ResponseSha256": "543B376506FA6C390343EFAD9B164490B2C4727FC07A39FAFD61124F6689E703"
+    },
+    {
+      "Report": "customers",
+      "MatchesSql": true,
+      "Rows": 4881,
+      "NormalizedRowsSha256": "D7DC10507B52E31A227635B1664A59D11DDE14A47A299B1F7BF0D02865D69CA6",
+      "SortedResponseSha256": "A6205D2FCB42344F1CA39EC981CEA37AD6DBADC5921CAE269330424016A0ED4B",
+      "ResponseSha256": "E8CBA55F838C74BDDA51F94789961903EFECC39634EC73DB812A1EFF4327EF10"
+    }
+  ],
+  "ReadChecks": [
+    {
+      "Name": "config-materialization",
+      "Status": "passed",
+      "Error": ""
+    },
+    {
+      "Name": "user-materialization",
+      "Status": "passed",
+      "Error": ""
+    },
+    {
+      "Name": "customer-materialization",
+      "Status": "passed",
+      "Error": ""
+    },
+    {
+      "Name": "invoice-materialization",
+      "Status": "passed",
+      "Error": ""
+    },
+    {
+      "Name": "bill-materialization",
+      "Status": "passed",
+      "Error": ""
+    },
+    {
+      "Name": "journal-materialization",
+      "Status": "passed",
+      "Error": ""
+    },
+    {
+      "Name": "inventory-materialization",
+      "Status": "failed",
+      "Error": "MySQL 1146"
+    },
+    {
+      "Name": "journal-controller-vs-sql",
+      "Status": "passed",
+      "Error": ""
+    },
+    {
+      "Name": "customer-controller-vs-sql",
+      "Status": "passed",
+      "Error": ""
+    }
+  ],
+  "UnverifiedRoutineCount": 26,
+  "ReadyForBusinessRegression": false,
+  "Limitations": "SELECT counts/materialization do not establish financial correctness, routine execution, ownership checks or .NET 6 equivalence. No row contents or credentials are saved."
+}

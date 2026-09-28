@@ -1,4 +1,4 @@
-﻿using Amazon;
+using Amazon;
 using Amazon.S3;
 using Amazon.S3.Model;
 using Microsoft.AspNetCore.Mvc;
@@ -12,11 +12,8 @@ using System.Threading.Tasks;
 [ApiController]
 public class AppVersionController : ControllerBase
 {
-    private const string AccessKey = "DO801LFQ3GCV966MRJFA";
-    private const string SecretKey = "r5z9/QqzVqDkKHsQC0kuqlXPc63mI2dqyejo0w4v7LA";
-    private const string SpaceName = "negosuite-app";
-    private const string Region = "sgp1";
     private readonly AmazonS3Client _s3Client;
+    private readonly string SpaceName;
 
     private readonly negosuiteContext _context;
     private IConfiguration _config { get; }
@@ -26,12 +23,16 @@ public class AppVersionController : ControllerBase
         _context = context;
         _config = configuration;
 
+        var accessKey = configuration["Storage:AccessKey"] ?? throw new InvalidOperationException("Storage:AccessKey is required for APK downloads.");
+        var secretKey = configuration["Storage:SecretKey"] ?? throw new InvalidOperationException("Storage:SecretKey is required for APK downloads.");
+        var region = configuration["Storage:Region"] ?? throw new InvalidOperationException("Storage:Region is required for APK downloads.");
+        SpaceName = configuration["Storage:Bucket"] ?? throw new InvalidOperationException("Storage:Bucket is required for APK downloads.");
         var config = new AmazonS3Config
         {
-            ServiceURL = $"https://{Region}.digitaloceanspaces.com", // DigitalOcean Spaces URL
+            ServiceURL = $"https://{region}.digitaloceanspaces.com", // DigitalOcean Spaces URL
             ForcePathStyle = true
         };
-        _s3Client = new AmazonS3Client(AccessKey, SecretKey, config);
+        _s3Client = new AmazonS3Client(accessKey, secretKey, config);
     }
 
 

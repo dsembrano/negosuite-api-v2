@@ -1,21 +1,18 @@
-FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS base
-WORKDIR /app
-EXPOSE 80
-EXPOSE 443
-
-FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
-COPY ["negosuite-api.csproj", "."]
+COPY global.json negosuite-api.csproj ./
+RUN dotnet restore negosuite-api.csproj
+COPY Program.cs Startup.cs ./
+COPY Controllers/ Controllers/
+COPY Models/ Models/
+COPY Services/ Services/
+RUN dotnet publish negosuite-api.csproj -c Release --no-restore -o /app/publish /p:UseAppHost=false
 
-RUN dotnet restore "./negosuite-api.csproj"
-COPY . .
-WORKDIR "/src/."
-RUN dotnet build "negosuite-api.csproj" -c Release -o /app/build
-
-FROM build AS publish
-RUN dotnet publish "negosuite-api.csproj" -c Release -o /app/publish
-
-FROM base AS final
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
-COPY --from=publish /app/publish .
+ENV ASPNETCORE_URLS=http://+:8080 \
+    ASPNETCORE_ENVIRONMENT=Production
+EXPOSE 8080
+COPY --from=build /app/publish ./
+USER $APP_UID
 ENTRYPOINT ["dotnet", "negosuite-api.dll"]

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,6 +13,7 @@ using negosuite_api.Services;
 using System.Text;
 using negosuite_api.Controllers;
 using System;
+using System.Net;
 
 namespace negosuite_api
 {
@@ -27,6 +29,14 @@ namespace negosuite_api
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.Configure<ForwardedHeadersOptions>(options =>
+            {
+                options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+                foreach (var proxy in Configuration.GetSection("ReverseProxy:KnownProxies").Get<string[]>() ?? Array.Empty<string>())
+                    options.KnownProxies.Add(IPAddress.Parse(proxy));
+                foreach (var network in Configuration.GetSection("ReverseProxy:KnownNetworks").Get<string[]>() ?? Array.Empty<string>())
+                    options.KnownIPNetworks.Add(System.Net.IPNetwork.Parse(network));
+            });
 
             services.AddCors(o => o.AddPolicy("MyPolicy", builder =>
             {
@@ -81,6 +91,8 @@ namespace negosuite_api
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+            app.UseForwardedHeaders();
+
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();

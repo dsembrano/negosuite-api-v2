@@ -1,0 +1,27 @@
+name: Build and validate API
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Restore
+        run: dotnet restore negosuite-api.sln
+      - name: Compatibility tests
+        run: dotnet test negosuite-api.sln -c Release --no-restore --logger trx
+      - name: Publish
+        run: dotnet publish negosuite-api.csproj -c Release --no-restore -o bin/ci-publish /p:UseAppHost=false
+      - name: Build Linux container
+        run: docker build --pull -t negosuite-api-v2:ci .
+      - name: Verify production container
+        shell: pwsh
+        run: ./scripts/Test-Container.ps1 -Image negosuite-api-v2:ci

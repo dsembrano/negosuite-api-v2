@@ -35,6 +35,7 @@ public sealed class ApiHost : IDisposable
             .ConfigureAppConfiguration((_, builder) => builder.AddInMemoryCollection(new Dictionary<string, string>
             {
                 ["ConnectionString:negosuite"] = connection,
+                ["ReverseProxy:KnownProxies:0"] = "192.0.2.10",
                 ["Jwt:Key"] = Key, ["Jwt:Issuer"] = "phase3", ["Jwt:Audience"] = "phase3"
             }))
             .UseStartup<Startup>()
@@ -70,10 +71,30 @@ public class ProbeController : ControllerBase
     [HttpGet("serialization")]
     public object Serialization() => new { Culture = CultureInfo.CurrentCulture.Name, Amount = 1234.5678m,
         Date = new DateTime(2026, 9, 28), Optional = (string)null };
+    [HttpGet("scheme")]
+    public object Scheme() => new { Scheme = Request.Scheme };
 }
 
 public class CompatibilityTests
 {
+    [Theory]
+    [InlineData("192.0.2.10", "https")]
+    [InlineData("192.0.2.11", "http")]
+    public async Task Forwarded_scheme_is_accepted_only_from_known_proxy(string remoteIp, string expected)
+    {
+        using var host = new ApiHost();
+        var response = await host.Server.SendAsync(context =>
+        {
+            context.Connection.RemoteIpAddress = IPAddress.Parse(remoteIp);
+            context.Request.Method = "GET";
+            context.Request.Scheme = "http";
+            context.Request.Path = "/__compatibility/scheme";
+            context.Request.Headers["X-Forwarded-Proto"] = "https";
+        });
+        using var body = await JsonDocument.ParseAsync(response.Response.Body);
+        Assert.Equal(expected, body.RootElement.GetProperty("scheme").GetString());
+    }
+
     [Theory]
     [InlineData("valid", 200)]
     [InlineData("expired", 401)]
