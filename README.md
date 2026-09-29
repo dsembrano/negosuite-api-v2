@@ -22,3 +22,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Test-Container.ps1
 
 # How to Enable Push-to-Deploy on DigitalOcean Kubernetes Using GitHub Actions
 https://docs.digitalocean.com/products/kubernetes/how-to/deploy-using-github-actions/
+
+Customer API changes: [refactoring, compatibility, and opt-in pagination](docs/customers-refactoring.md).
+
+Temporary local migration setting: [parallel web sessions and reactivation instructions](docs/temporary-web-sessions.md). Re-enable single-web-session enforcement after Angular side-by-side testing.
+
+Supplier API changes: [refactoring, compatibility, and opt-in pagination](docs/suppliers-refactoring.md).

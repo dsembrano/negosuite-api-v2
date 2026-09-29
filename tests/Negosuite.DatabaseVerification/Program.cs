@@ -177,7 +177,11 @@ if (selectedConfig != null)
         await Check("customer-controller-vs-sql", async () =>
         {
             var expected = long.Parse((await Read("SELECT COUNT(*) FROM customer WHERE UserConfigId=@tenant AND Status=1", ("@tenant", selectedConfig.Id)))[0][0]);
-            var result = await new CustomersController(db).GetCustomers(Newtonsoft.Json.JsonConvert.SerializeObject(criteria));
+            var controller = new CustomersController(db) { ControllerContext = new ControllerContext { HttpContext = new Microsoft.AspNetCore.Http.DefaultHttpContext() } };
+            // Direct-controller harness supplies the company normally resolved by ConfigUuidFilter.
+            // Literal key keeps this same harness compilable against the historical .NET 6 API.
+            controller.HttpContext.Items["Negosuite.ValidatedCompanyId"] = selectedConfig.Id;
+            var result = await controller.GetCustomers(Newtonsoft.Json.JsonConvert.SerializeObject(criteria));
             if (result is not OkObjectResult ok) throw new InvalidOperationException("Customer query did not return OK.");
             var rows = JsonSerializer.SerializeToElement(ok.Value, new JsonSerializerOptions(JsonSerializerDefaults.Web));
             var matches = rows.GetArrayLength() == expected;

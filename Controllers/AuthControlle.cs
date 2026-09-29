@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
@@ -65,7 +65,7 @@ namespace negosuite_api.Controllers
                 return NotFound("Invalid email or password.");
             }
 
-            var accessToken = GenerateJSONWebToken();
+            var accessToken = GenerateJSONWebToken(user.Id);
             var refreshToken = GenerateRefreshToken();
 
             UserLog userLog = new UserLog();
@@ -144,7 +144,7 @@ namespace negosuite_api.Controllers
                 return NotFound("Invalid email or password.");
             }
 
-            var accessToken = GenerateJSONWebToken();
+            var accessToken = GenerateJSONWebToken(user.Id);
             var refreshToken = credentials.refreshToken; // GenerateJSONWebToken(1440); // expiry = 2 days
             var appVersion = await _context.AppVersions.FindAsync(1);
 
@@ -258,7 +258,7 @@ namespace negosuite_api.Controllers
         }
 
 
-        private string GenerateJSONWebToken(int expiry = 30)
+        private string GenerateJSONWebToken(int userId, int expiry = 30)
         {
             var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
             var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
@@ -266,7 +266,7 @@ namespace negosuite_api.Controllers
             var token = new JwtSecurityToken(
                 _config["Jwt:Issuer"],
                 _config["Jwt:Audience"],
-                null,
+                new[] { new Claim("negosuite_user_id", userId.ToString(System.Globalization.CultureInfo.InvariantCulture)) },
                 expires: DateTime.UtcNow.AddMinutes(expiry),
                 signingCredentials: credentials);
 

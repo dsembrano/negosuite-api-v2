@@ -1,0 +1,89 @@
+{
+    "VerifiedOn":  "2026-09-29",
+    "Scope":  "Customer refactor; local development reads and isolated MySQL write fixtures",
+    "CustomerRows":  5173,
+    "PreviousResponseSha256":  "18B2F0A6CF42BF0883D3AC70841B88DCDC7AAEC8381BC1890E3650A4977F7B58",
+    "RefactoredResponseSha256":  "18B2F0A6CF42BF0883D3AC70841B88DCDC7AAEC8381BC1890E3650A4977F7B58",
+    "FullListByteEquality":  true,
+    "FinalImplementationComparedWithLegacyController":  true,
+    "DetailSamples":  20,
+    "DetailByteEquality":  true,
+    "IsolatedTestsPassed":  25,
+    "IsolatedTestsFailed":  0,
+    "IsolatedTestsSkipped":  0,
+    "Measurements":  [
+                         {
+                             "Mode":  "legacy-full",
+                             "Run":  1,
+                             "Milliseconds":  373.9361,
+                             "Queries":  1,
+                             "PayloadBytes":  5308922,
+                             "TrackedEntities":  5292
+                         },
+                         {
+                             "Mode":  "legacy-full",
+                             "Run":  2,
+                             "Milliseconds":  285.901,
+                             "Queries":  1,
+                             "PayloadBytes":  5308922,
+                             "TrackedEntities":  5292
+                         },
+                         {
+                             "Mode":  "legacy-full",
+                             "Run":  3,
+                             "Milliseconds":  273.9102,
+                             "Queries":  1,
+                             "PayloadBytes":  5308922,
+                             "TrackedEntities":  5292
+                         },
+                         {
+                             "Mode":  "refactored-full",
+                             "Run":  1,
+                             "Milliseconds":  143.2316,
+                             "Queries":  3,
+                             "PayloadBytes":  5308922,
+                             "TrackedEntities":  0
+                         },
+                         {
+                             "Mode":  "refactored-full",
+                             "Run":  2,
+                             "Milliseconds":  120.5748,
+                             "Queries":  3,
+                             "PayloadBytes":  5308922,
+                             "TrackedEntities":  0
+                         },
+                         {
+                             "Mode":  "refactored-full",
+                             "Run":  3,
+                             "Milliseconds":  139.6479,
+                             "Queries":  3,
+                             "PayloadBytes":  5308922,
+                             "TrackedEntities":  0
+                         },
+                         {
+                             "Mode":  "page-50",
+                             "Run":  1,
+                             "Milliseconds":  7.5939,
+                             "Queries":  4,
+                             "PayloadBytes":  52261,
+                             "TrackedEntities":  0
+                         },
+                         {
+                             "Mode":  "page-50",
+                             "Run":  2,
+                             "Milliseconds":  7.3718,
+                             "Queries":  4,
+                             "PayloadBytes":  52261,
+                             "TrackedEntities":  0
+                         },
+                         {
+                             "Mode":  "page-50",
+                             "Run":  3,
+                             "Milliseconds":  15.582,
+                             "Queries":  4,
+                             "PayloadBytes":  52261,
+                             "TrackedEntities":  0
+                         }
+                     ],
+    "Notes":  "One warm-up then three timed iterations per mode including serialization. No business records or credentials persisted. No development writes."
+}

@@ -96,6 +96,19 @@ public class MySqlCompatibilityTests
             db.UserLogs.Add(new UserLog { UserId = user.Id, Platform = "web", SignInDate = DateTime.UtcNow.AddMinutes(1) });
             await db.SaveChangesAsync();
             Assert.Equal(HttpStatusCode.Unauthorized, (await host.Client.GetAsync("/__compatibility/config")).StatusCode);
+            // Local migration testing can keep an older web login active without bypassing authentication or company validation.
+            using (var parallelHost = new ApiHost(builder.ConnectionString, enforceSingleWebSession: false))
+            {
+                parallelHost.Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", ApiHost.Token());
+                parallelHost.Client.DefaultRequestHeaders.Add("configUuid", config.Uuid);
+                parallelHost.Client.DefaultRequestHeaders.Add("X-UserLog", JsonSerializer.Serialize(new { Id = logId, UserId = user.Id }));
+                Assert.Equal(HttpStatusCode.OK, (await parallelHost.Client.GetAsync("/__compatibility/config")).StatusCode);
+                parallelHost.Client.DefaultRequestHeaders.Remove("configUuid");
+                parallelHost.Client.DefaultRequestHeaders.Add("configUuid", "unknown");
+                Assert.Equal(HttpStatusCode.Unauthorized, (await parallelHost.Client.GetAsync("/__compatibility/config")).StatusCode);
+                parallelHost.Client.DefaultRequestHeaders.Authorization = null;
+                Assert.Equal(HttpStatusCode.Unauthorized, (await parallelHost.Client.GetAsync("/__compatibility/secured")).StatusCode);
+            }
             host.Client.DefaultRequestHeaders.Remove("configUuid");
             host.Client.DefaultRequestHeaders.Add("configUuid", "unknown");
             Assert.Equal(HttpStatusCode.Unauthorized, (await host.Client.GetAsync("/__compatibility/config")).StatusCode);

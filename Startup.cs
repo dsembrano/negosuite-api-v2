@@ -85,6 +85,8 @@ namespace negosuite_api
             services.AddHealthChecks();
             services.AddSingleton<IEmailService, EmailService>();
             services.AddScoped<ConfigUuidFilter>();
+            services.AddScoped<CustomerService>();
+            services.AddScoped<SupplierService>();
 
         }
 

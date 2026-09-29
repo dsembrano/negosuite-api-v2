@@ -1,215 +1,97 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using negosuite_api.Contracts.Suppliers;
+using negosuite_api.Contracts.Customers;
 using negosuite_api.Models;
+using negosuite_api.Services;
 using Newtonsoft.Json;
 
-namespace negosuite_api.Controllers
+namespace negosuite_api.Controllers;
+
+[Authorize]
+[TypeFilter(typeof(ConfigUuidFilter))]
+[Route("api/suppliers")]
+[ApiController]
+public class SuppliersController : ControllerBase
 {
-    [Authorize]
-    [TypeFilter(typeof(ConfigUuidFilter))]
-    [Route("api/suppliers")]
-    [ApiController]
-    public class SuppliersController : ControllerBase
+    public const bool STATUS_INACTIVE = false;
+    public const bool STATUS_ACTIVE = true;
+    private readonly SupplierService suppliers;
+
+    [ActivatorUtilitiesConstructor]
+    public SuppliersController(SupplierService suppliers) => this.suppliers = suppliers;
+
+    // Retain the context constructor used by the migration comparison harness.
+    public SuppliersController(negosuiteContext context) => suppliers = new SupplierService(context);
+
+    private int? CompanyId => HttpContext?.Items[ConfigUuidFilter.CompanyIdKey] as int?;
+
+    [HttpGet]
+    public async Task<ActionResult> GetSuppliers(string criteria, [FromQuery] int? pageNumber = null,
+        [FromQuery] int? pageSize = null, CancellationToken cancellationToken = default, [FromQuery] string search = null,
+        [FromQuery] string sortBy = null, [FromQuery] string sortDirection = null)
     {
-        public static bool STATUS_INACTIVE = false;
-        public static bool STATUS_ACTIVE = true;
-        private readonly negosuiteContext _context;
+        if (!CompanyId.HasValue) return Unauthorized();
+        if (!CustomerPagination.IsValid(pageNumber, pageSize))
+            return BadRequest("Supply both pageNumber (1 or greater) and pageSize (1 to 200), within the supported offset range.");
+        if (!SupplierSorting.IsValid(sortBy, sortDirection))
+            return BadRequest("Unsupported supplier sortBy or sortDirection. Use a supplier column and asc or desc.");
+        SupplierListCriteria filter;
+        try { filter = string.IsNullOrWhiteSpace(criteria) ? null : JsonConvert.DeserializeObject<SupplierListCriteria>(criteria); }
+        catch (JsonException) { return BadRequest("Invalid supplier criteria JSON."); }
+        if (filter?.UserConfigId == null) return BadRequest("criteria.userConfigId is required.");
+        if (filter.UserConfigId != CompanyId) return Forbid();
+        return Ok(await suppliers.ListAsync(CompanyId.Value, filter.ShowInactive == true, pageNumber, pageSize, cancellationToken, search, sortBy, sortDirection));
+    }
 
-        public SuppliersController(negosuiteContext context)
+    [HttpGet("{id}")]
+    public async Task<ActionResult<SupplierDetailDto>> GetSupplier(int id, CancellationToken cancellationToken = default)
+    {
+        if (!CompanyId.HasValue) return Unauthorized();
+        var result = await suppliers.GetAsync(CompanyId.Value, id, cancellationToken);
+        if (result == null) return NotFound();
+        return result;
+    }
+
+    [HttpPost]
+    public async Task<ActionResult<SupplierDetailDto>> PostSupplier(SupplierCreateRequest supplier, CancellationToken cancellationToken = default)
+    {
+        if (!CompanyId.HasValue) return Unauthorized();
+        if (supplier == null || supplier.Id != 0) return BadRequest("New supplier ID must be zero or omitted.");
+        if (supplier.UserConfigId != CompanyId) return Forbid();
+        var result = await suppliers.SaveAsync(CompanyId.Value, null, supplier, cancellationToken);
+        if (result.Error != null) return BadRequest(result.Error);
+        return CreatedAtAction(nameof(GetSupplier), new { id = result.Supplier.Id }, result.Supplier);
+    }
+
+    [HttpPut("{id}")]
+    public async Task<ActionResult<SupplierDetailDto>> PutSupplier(int id, SupplierUpdateRequest supplier, CancellationToken cancellationToken = default)
+    {
+        if (!CompanyId.HasValue) return Unauthorized();
+        if (supplier == null || supplier.Id != id) return BadRequest();
+        if (supplier.UserConfigId != CompanyId) return Forbid();
+        var result = await suppliers.SaveAsync(CompanyId.Value, id, supplier, cancellationToken);
+        if (result.Missing) return NotFound();
+        if (result.Error != null) return BadRequest(result.Error);
+        return result.Supplier;
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteSupplier(int id, CancellationToken cancellationToken = default)
+    {
+        if (!CompanyId.HasValue) return Unauthorized();
+        try
         {
-            _context = context;
+            if (!await suppliers.DeleteAsync(CompanyId.Value, id, cancellationToken)) return NotFound();
         }
-
-        // GET: api/Suppliers
-        [HttpGet]
-        public async Task<ActionResult> GetSuppliers(string criteria)
+        catch (DbUpdateException)
         {
-
-            SelectCriteria selectCriteria = !string.IsNullOrEmpty(criteria) ? JsonConvert.DeserializeObject<SelectCriteria>(criteria) : null;
-
-            var result = await _context.Suppliers.OrderBy(c => c.Name)
-                .Where(e => e.UserConfigId == selectCriteria.UserConfigId)
-                .Where(c => selectCriteria != null && selectCriteria.ShowInactive == true ? true : c.Status == STATUS_ACTIVE)
-                .Select(c => new
-                {
-                    c.Id,
-                    c.Code,
-                    c.Name,
-                    c.Tin,
-                    c.Status,
-                    c.TaxRateId,
-                    TaxRateName = c.TaxRate.Name,
-                    c.PaymentTermId,
-                    PaymentTermName = c.PaymentTerm.Name,
-                }).ToListAsync();
-
-            return Ok(result);
+            return BadRequest("Unable to delete supplier. It is probably used in another transaction.");
         }
-
-        // GET: api/Suppliers/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Supplier>> GetSupplier(int id)
-        {
-            var supplier = await _context.Suppliers.Where(s => s.Id == id)
-                .Include(c => c.TaxRate)
-                .Include(c => c.PaymentTerm)
-                .Include(c => c.SupplierContacts)
-                .Include(c => c.SupplierAddresses).ThenInclude(a => a.CityMunicipality).ThenInclude(s => s.StateProvince)
-                .SingleOrDefaultAsync();
-
-            if (supplier == null)
-            {
-                return NotFound();
-            }
-
-            return supplier;
-        }
-
-        // PUT: api/Suppliers/5
-        [HttpPut("{id}")]
-        public async Task<ActionResult<Supplier>> PutSupplier(int id, Supplier supplier)
-        {
-            if (id != supplier.Id)
-            {
-                return BadRequest();
-            }
-
-            // supplier contacts
-            foreach (var s in supplier.SupplierContacts.ToList())
-            {
-                if (s.Id == 0)
-                {
-                    s.CreatedDate = DateTime.Now;
-                    _context.SupplierContacts.Add(s);
-                }
-                else
-                {
-                    if (s.Deleted == true)
-                    {
-                        var contact = await _context.SupplierContacts.FindAsync(s.Id);
-                        _context.SupplierContacts.Remove(contact);
-                    }
-                    else
-                    {
-                        s.LastUpdatedDate = DateTime.Now;
-                        _context.Entry(s).State = EntityState.Modified;
-                    }
-                }
-            }
-
-            // supplier Addresses
-            foreach (var s in supplier.SupplierAddresses.ToList())
-            {
-                if (s.Id == 0)
-                {
-                    s.CreatedDate = DateTime.Now;
-                    _context.SupplierAddresses.Add(s);
-                }
-                else
-                {
-                    if (s.Deleted == true)
-                    {
-                        var address = await _context.SupplierAddresses.FindAsync(s.Id);
-                        _context.SupplierAddresses.Remove(address);
-                    }
-                    else
-                    {
-                        s.LastUpdatedDate = DateTime.Now;
-                        _context.Entry(s).State = EntityState.Modified;
-                    }
-                }
-            }
-
-            supplier.LastUpdatedDate = DateTime.Now;
-            _context.Entry(supplier).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!SupplierExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            //return NoContent();
-            return await GetSupplier(supplier.Id);
-        }
-
-        // POST: api/Suppliers
-        [HttpPost]
-        public async Task<ActionResult<Supplier>> PostSupplier(Supplier supplier)
-        {
-            supplier.CreatedDate = DateTime.Now;
-
-            foreach (var s in supplier.SupplierContacts)
-            {
-                s.CreatedDate = DateTime.Now;
-            }
-
-            foreach (var s in supplier.SupplierAddresses)
-            {
-                s.CreatedDate = DateTime.Now;
-            }
-
-            _context.Suppliers.Add(supplier);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction("GetSupplier", new { id = supplier.Id }, supplier);
-        }
-
-        // DELETE: api/Suppliers/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteSupplier(int id)
-        {
-            var supplier = await _context.Suppliers.Where(s => s.Id == id)
-               .Include(s => s.SupplierContacts)
-               .Include(s => s.SupplierAddresses).SingleOrDefaultAsync();
-
-            if (supplier == null)
-            {
-                return NotFound();
-            }
-
-            foreach (var contact in supplier.SupplierContacts)
-            {
-                _context.SupplierContacts.Remove(contact);
-            }
-
-            foreach (var address in supplier.SupplierAddresses)
-            {
-                _context.SupplierAddresses.Remove(address);
-            }
-
-            try
-            {
-                _context.Suppliers.Remove(supplier);
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateException)
-            {
-                return BadRequest("Unable to delete supplier. It is probably used in another transaction.");
-            }
-
-            return NoContent();
-        }
-
-        private bool SupplierExists(int id)
-        {
-            return _context.Suppliers.Any(e => e.Id == id);
-        }
+        return NoContent();
     }
 }

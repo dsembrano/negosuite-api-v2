@@ -29,12 +29,13 @@ public sealed class ApiHost : IDisposable
     public TestServer Server { get; }
     public HttpClient Client { get; }
     private readonly IHost host;
-    public ApiHost(string connection = "server=127.0.0.1;port=1;database=unavailable;user=test;password=test")
+    public ApiHost(string connection = "server=127.0.0.1;port=1;database=unavailable;user=test;password=test", bool? enforceSingleWebSession = null)
     {
         host = new HostBuilder().ConfigureWebHost(web => web.UseTestServer().UseEnvironment("Development")
             .ConfigureAppConfiguration((_, builder) => builder.AddInMemoryCollection(new Dictionary<string, string>
             {
                 ["ConnectionString:negosuite"] = connection,
+                ["Authentication:EnforceSingleWebSession"] = enforceSingleWebSession?.ToString(),
                 ["ReverseProxy:KnownProxies:0"] = "192.0.2.10",
                 ["Jwt:Key"] = Key, ["Jwt:Issuer"] = "phase3", ["Jwt:Audience"] = "phase3"
             }))
