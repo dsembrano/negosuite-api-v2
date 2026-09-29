@@ -11,3 +11,7 @@ Scope is derived from the signed `negosuite_user_id` claim and the company valid
 The web client debounces and serializes saves, offers Restore defaults, and retains unsaved layout with explicit Retry feedback on failure/conflict. It uses no localStorage preference cache. See the sibling web repository's `docs/customer-column-preferences.md` for UI behavior and verification boundaries.
 
 All 114 API compatibility tests passed against isolated MySQL fixtures, including migration idempotence, storage across API hosts, user/company isolation, permissions, conflict/reset behavior, and signed claims from login/refresh. The user's running API process was not restarted and live authenticated application-data acceptance remains outstanding.
+
+Items support: GET/PUT api/me/page-preferences/items uses Item permission 3130 and the existing preference table/version contract. Allowed optional columns: code, itemCategoryName, typeName, unit, rate, cost, toSell, toPurchase, trackInventory, reorderPoint, status. See docs/items-refactoring.md.
+
+Item Categories support: GET/PUT `api/me/page-preferences/item-categories` uses Item Category permission `3135` and the existing preference table/version contract. The optional column is `status`. Mandatory `name` and unknown keys are ignored. See [Item Categories API refactoring](item-categories-refactoring.md).

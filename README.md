@@ -28,3 +28,7 @@ Customer API changes: [refactoring, compatibility, and opt-in pagination](docs/c
 Temporary local migration setting: [parallel web sessions and reactivation instructions](docs/temporary-web-sessions.md). Re-enable single-web-session enforcement after Angular side-by-side testing.
 
 Supplier API changes: [refactoring, compatibility, and opt-in pagination](docs/suppliers-refactoring.md).
+
+Items API changes: [refactoring, compatibility, filtering, sorting, and pagination](docs/items-refactoring.md).
+
+Item Categories API changes: [refactoring, compatibility, filtering, sorting, and pagination](docs/item-categories-refactoring.md).

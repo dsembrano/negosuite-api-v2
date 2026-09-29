@@ -32,6 +32,8 @@ public class PagePreferenceTests
     [MySqlTheory]
     [InlineData("customers", "3110", "suppliers")]
     [InlineData("suppliers", "3120", "customers")]
+    [InlineData("items", "3130", "customers")]
+    [InlineData("item-categories", "3135", "items")]
     public async Task Preferences_persist_with_authenticated_user_company_scope_versions_and_reset(string pageKey, string moduleId, string otherPage)
     {
         var connection = new MySqlConnectionStringBuilder(Environment.GetEnvironmentVariable("NEGOSUITE_PHASE3_MYSQL"));
@@ -56,6 +58,8 @@ public class PagePreferenceTests
             inactive.Status = false; denied.UserRoleId = null;
             db.Users.AddRange(first, second, inactive, denied); db.AppVersions.Add(new AppVersion { Id = 1, VersionCode = "test" }); await db.SaveChangesAsync();
             var path = "/api/me/page-preferences/" + pageKey;
+            var column = pageKey switch { "items" => "unit", "item-categories" => "status", _ => "address" };
+            var secondColumn = pageKey == "items" ? "cost" : "tin";
             void As(int id, string companyUuid = null)
             {
                 host.Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Token(id));
@@ -65,10 +69,13 @@ public class PagePreferenceTests
             As(first.Id);
             var initial = await host.Client.GetFromJsonAsync<PagePreferenceResponse>(path);
             Assert.Equal(0, initial.Version); Assert.Empty(initial.Columns);
-            var put = await host.Client.PutAsJsonAsync(path, new { version = 0, columns = new { address = true, tin = false, creditLimit = false, name = false, removedColumn = true }, userId = second.Id, companyId = other.Id });
+            var put = await host.Client.PutAsJsonAsync(path, new { version = 0, columns = new Dictionary<string, bool> { [column] = true, [secondColumn] = false, ["creditLimit"] = false, ["name"] = false, ["removedColumn"] = true }, userId = second.Id, companyId = other.Id });
             Assert.Equal(HttpStatusCode.OK, put.StatusCode);
             var saved = await put.Content.ReadFromJsonAsync<PagePreferenceResponse>();
-            Assert.Equal(1, saved.Version); Assert.True(saved.Columns["address"]); Assert.False(saved.Columns["tin"]); Assert.Equal(pageKey == "customers" ? 3 : 2, saved.Columns.Count);
+            Assert.Equal(1, saved.Version); Assert.True(saved.Columns[column]);
+            if (pageKey == "item-categories") Assert.False(saved.Columns.ContainsKey(secondColumn));
+            else Assert.False(saved.Columns[secondColumn]);
+            Assert.Equal(pageKey switch { "customers" => 3, "item-categories" => 1, _ => 2 }, saved.Columns.Count);
             Assert.Equal(pageKey == "customers", saved.Columns.ContainsKey("creditLimit"));
             Assert.Empty((await host.Client.GetFromJsonAsync<PagePreferenceResponse>("/api/me/page-preferences/" + otherPage)).Columns);
             Assert.Equal("legacy unchanged", await db.Users.AsNoTracking().Where(u => u.Id == first.Id).Select(u => u.UserUIConfig).SingleAsync());
@@ -78,7 +85,7 @@ public class PagePreferenceTests
                 otherHost.Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Token(first.Id));
                 otherHost.Client.DefaultRequestHeaders.Add("configUuid", company.Uuid);
                 var restored = await otherHost.Client.GetFromJsonAsync<PagePreferenceResponse>(path);
-                Assert.Equal(1, restored.Version); Assert.True(restored.Columns["address"]);
+                Assert.Equal(1, restored.Version); Assert.True(restored.Columns[column]);
             }
             Assert.Equal(HttpStatusCode.Conflict, (await host.Client.PutAsJsonAsync(path, new { version = 0, columns = new { address = false } })).StatusCode);
             As(second.Id); Assert.Empty((await host.Client.GetFromJsonAsync<PagePreferenceResponse>(path)).Columns);

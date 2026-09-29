@@ -87,6 +87,8 @@ namespace negosuite_api
             services.AddScoped<ConfigUuidFilter>();
             services.AddScoped<CustomerService>();
             services.AddScoped<SupplierService>();
+            services.AddScoped<ItemService>();
+            services.AddScoped<ItemCategoryService>();
 
         }
 

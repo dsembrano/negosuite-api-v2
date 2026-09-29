@@ -28,6 +28,9 @@ public class PagePreferencesController : ControllerBase
         { "contact", "address", "tin", "taxRateName", "paymentTermName", "creditLimit", "status" };
     private static readonly HashSet<string> SupplierColumns = new(StringComparer.Ordinal)
         { "contact", "address", "tin", "taxRateName", "paymentTermName", "status" };
+    private static readonly HashSet<string> ItemColumns = new(StringComparer.Ordinal)
+        { "code", "itemCategoryName", "typeName", "unit", "rate", "cost", "toSell", "toPurchase", "trackInventory", "reorderPoint", "status" };
+    private static readonly HashSet<string> ItemCategoryColumns = new(StringComparer.Ordinal) { "status" };
 
     public PagePreferencesController(negosuiteContext db) => this.db = db;
 
@@ -73,14 +76,14 @@ public class PagePreferencesController : ControllerBase
         Detail = "Column choices changed in another session. Reload the preference version before saving again." });
 
     private static Dictionary<string, bool> Normalize(string pageKey, Dictionary<string, bool> columns) =>
-        (columns ?? new()).Where(pair => (pageKey == "suppliers" ? SupplierColumns : CustomerColumns).Contains(pair.Key)).ToDictionary(pair => pair.Key, pair => pair.Value);
+        (columns ?? new()).Where(pair => (pageKey switch { "suppliers" => SupplierColumns, "items" => ItemColumns, "item-categories" => ItemCategoryColumns, _ => CustomerColumns }).Contains(pair.Key)).ToDictionary(pair => pair.Key, pair => pair.Value);
 
     private async Task<(int UserId, int CompanyId, ActionResult Error)> Scope(string pageKey, CancellationToken ct)
     {
         if (!int.TryParse(User.FindFirst("negosuite_user_id")?.Value, out var userId) || userId <= 0)
             return (0, 0, Unauthorized()); // Existing claimless tokens refresh through the normal client flow.
         if (HttpContext.Items[ConfigUuidFilter.CompanyIdKey] is not int companyId) return (0, 0, Unauthorized());
-        var moduleId = pageKey switch { "customers" => "3110", "suppliers" => "3120", _ => null };
+        var moduleId = pageKey switch { "customers" => "3110", "suppliers" => "3120", "items" => "3130", "item-categories" => "3135", _ => null };
         if (moduleId == null) return (0, 0, NotFound());
         var user = await db.Users.AsNoTracking().Include(u => u.UserRole).SingleOrDefaultAsync(u => u.Id == userId && u.Status && u.ConfigId == companyId, ct);
         if (user == null) return (0, 0, Forbid());
