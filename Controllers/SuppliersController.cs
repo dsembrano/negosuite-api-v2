@@ -33,7 +33,7 @@ public class SuppliersController : ControllerBase
     [HttpGet]
     public async Task<ActionResult> GetSuppliers(string criteria, [FromQuery] int? pageNumber = null,
         [FromQuery] int? pageSize = null, CancellationToken cancellationToken = default, [FromQuery] string search = null,
-        [FromQuery] string sortBy = null, [FromQuery] string sortDirection = null)
+        [FromQuery] string sortBy = null, [FromQuery] string sortDirection = null, [FromQuery] bool includeDetails = false)
     {
         if (!CompanyId.HasValue) return Unauthorized();
         if (!CustomerPagination.IsValid(pageNumber, pageSize))
@@ -45,7 +45,7 @@ public class SuppliersController : ControllerBase
         catch (JsonException) { return BadRequest("Invalid supplier criteria JSON."); }
         if (filter?.UserConfigId == null) return BadRequest("criteria.userConfigId is required.");
         if (filter.UserConfigId != CompanyId) return Forbid();
-        return Ok(await suppliers.ListAsync(CompanyId.Value, filter.ShowInactive == true, pageNumber, pageSize, cancellationToken, search, sortBy, sortDirection));
+        return Ok(await suppliers.ListAsync(CompanyId.Value, filter.ShowInactive == true, pageNumber, pageSize, cancellationToken, search, sortBy, sortDirection, includeDetails));
     }
 
     [HttpGet("{id}")]

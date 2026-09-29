@@ -15,7 +15,7 @@ public sealed class SupplierService
     private readonly negosuiteContext db;
     public SupplierService(negosuiteContext db) => this.db = db;
 
-    public async Task<object> ListAsync(int companyId, bool showInactive, int? pageNumber, int? pageSize, CancellationToken ct, string search = null, string sortBy = null, string sortDirection = null)
+    public async Task<object> ListAsync(int companyId, bool showInactive, int? pageNumber, int? pageSize, CancellationToken ct, string search = null, string sortBy = null, string sortDirection = null, bool includeDetails = false)
     {
         var query = db.Suppliers.AsNoTracking().Where(c => c.UserConfigId == companyId);
         if (!showInactive) query = query.Where(c => c.Status);
@@ -35,6 +35,31 @@ public sealed class SupplierService
             PaymentTermId = c.PaymentTermId,
             PaymentTermName = c.PaymentTerm.Name
         }).ToListAsync(ct);
+        if (includeDetails && items.Count > 0)
+        {
+            var ids = items.Select(s => s.Id).ToArray();
+            var addressQuery = db.SupplierAddresses.AsNoTracking();
+            var contactQuery = db.SupplierContacts.AsNoTracking();
+            if (pageNumber.HasValue)
+            {
+                addressQuery = addressQuery.Where(a => ids.Contains(a.SupplierId));
+                contactQuery = contactQuery.Where(c => ids.Contains(c.SupplierId));
+            }
+            else
+            {
+                // Export uses the filtered tenant query rather than a large list of IDs.
+                addressQuery = addressQuery.Where(a => query.Any(s => s.Id == a.SupplierId));
+                contactQuery = contactQuery.Where(c => query.Any(s => s.Id == c.SupplierId));
+            }
+            var addresses = (await addressQuery.Include(a => a.CityMunicipality).ThenInclude(c => c.StateProvince)
+                .OrderBy(a => a.Id).ToListAsync(ct)).ToLookup(a => a.SupplierId);
+            var contacts = (await contactQuery.OrderBy(c => c.Id).ToListAsync(ct)).ToLookup(c => c.SupplierId);
+            foreach (var item in items)
+            {
+                item.SupplierAddresses = addresses[item.Id].Select(SupplierMapping.Map).ToList();
+                item.SupplierContacts = contacts[item.Id].Select(SupplierMapping.Map).ToList();
+            }
+        }
         return pageNumber.HasValue ? new PagedResult<SupplierListItemDto>(items, pageNumber.Value, pageSize.Value, total) : items;
     }
 

@@ -56,6 +56,11 @@ public class SupplierContactRequest
 
 public class SupplierListItemDto
 {
+    // Opt-in expansion preserves the nine-field legacy list response.
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public ICollection<SupplierAddressDto> SupplierAddresses { get; set; }
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public ICollection<SupplierContactDto> SupplierContacts { get; set; }
     public int Id { get; set; }
     public string Code { get; set; }
     public string Name { get; set; }
