@@ -1,7 +1,12 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Threading;
+using Microsoft.Extensions.DependencyInjection;
+using negosuite_api.Contracts.Customers;
+using negosuite_api.Contracts.SalesReceipts;
+using negosuite_api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -18,127 +23,56 @@ namespace negosuite_api.Controllers
     public class SalesReceiptsController : ControllerBase
     {
         private readonly negosuiteContext _context;
+        private readonly SalesReceiptService service;
 
-        public SalesReceiptsController(negosuiteContext context)
+        [ActivatorUtilitiesConstructor]
+        public SalesReceiptsController(negosuiteContext context, SalesReceiptService service)
         {
             _context = context;
+            this.service = service;
         }
-
-        // GET: api/SalesReceipts
-        /*
-        [HttpGet]
-        public async Task<ActionResult> GetSalesReceipts(string criteria)
-        {
-            SelectCriteria selectCriteria = !string.IsNullOrEmpty(criteria) ? JsonConvert.DeserializeObject<SelectCriteria>(criteria) : null;
-
-            var result = await _context.SalesReceipts
-                .Where(e => selectCriteria.ReferenceNo != null ? e.ReceiptNo == selectCriteria.ReferenceNo : true)
-                .Where(e => selectCriteria.UserConfigId.HasValue ? e.UserConfigId == selectCriteria.UserConfigId : true)
-                .Where(e => selectCriteria.PeriodStart.HasValue && selectCriteria.PeriodEnd.HasValue ? e.ReceiptDate >= selectCriteria.PeriodStart && e.ReceiptDate <= selectCriteria.PeriodEnd : true)
-                .Where(e => selectCriteria.CustomerId.HasValue ? e.CustomerId == selectCriteria.CustomerId : true)
-                .Where(e => selectCriteria.ShowDeleted == true ? true : e.Status != GeneralJournalsController.STATUS_DELETED)
-               .Select(e => new
-               {
-                   e.Id,
-                   e.ReceiptNo,
-                   e.ReceiptDate,
-                   e.CustomerId,
-                   CustomerName = e.Customer.Name,
-                   //e.Customer,
-                   e.Amount,
-                   e.Balance,
-                   e.PaymentModeId,
-                   PaymentModeName = e.PaymentMode.Name,
-                   e.PaymentMode,
-                   e.Status,
-                   StatusName = GetStatusName(e)
-               }).OrderBy(e => e.ReceiptDate).ThenBy(e => e.ReceiptNo).ToListAsync();
-
-            return Ok(result);
-        }*/
-
+        public SalesReceiptsController(negosuiteContext context) : this(context, new SalesReceiptService(context)) { }
+        private int? CompanyId => HttpContext?.Items[ConfigUuidFilter.CompanyIdKey] as int?;
 
         [HttpGet]
-        public async Task<ActionResult> GetSalesReceipts(string criteria)
+        public async Task<ActionResult> GetSalesReceipts(string criteria, [FromQuery] int? pageNumber = null,
+            [FromQuery] int? pageSize = null, CancellationToken cancellationToken = default,
+            [FromQuery] string search = null, [FromQuery] string sortBy = null, [FromQuery] string sortDirection = null,
+            [FromQuery] short? status = null)
         {
-            SelectCriteria selectCriteria = JsonConvert.DeserializeObject<SelectCriteria>(criteria);
-
-            var userConfigId = selectCriteria.UserConfigId.ToString();
-            var periodStart = selectCriteria.PeriodStart?.ToString("yyyy-MM-dd");
-            var periodEnd = selectCriteria.PeriodEnd?.ToString("yyyy-MM-dd"); ;
-            var customerId = (selectCriteria.CustomerId != null) ? selectCriteria.CustomerId.ToString() : "";
-            var referenceNo = (selectCriteria.ReferenceNo != null) ? selectCriteria.ReferenceNo.ToString() : "";
-            var arrayString = string.IsNullOrEmpty(selectCriteria.ArrayString) ? "" : selectCriteria.ArrayString;
-            var isPOS = (selectCriteria.IsPOS == true) ? "1" : "";
-
-            var list = await _context.SPSalesReceipts
-                .FromSqlInterpolated($"CALL GetSalesReceipts({userConfigId}, {periodStart}, {periodEnd}, {customerId}, {referenceNo}, {arrayString}, {isPOS})")
-                .ToListAsync();
-
-            var result = list
-                .Select(e => new
-                {
-                    e.Id,
-                    e.ReceiptNo,
-                    e.ReceiptDate,
-                    e.CustomerId,
-                    e.CustomerName,
-                    e.CustomerTIN,
-                    e.BillingAddress,
-                    e.BillingContactName,
-                    e.BillingContactEmail,
-                    e.ShippingAddress,
-                    e.ShippingContactName,
-                    e.ShippingContactEmail,
-                    e.Amount,
-                    e.Balance,
-                    e.PaymentModeId,
-                    e.PaymentModeName,
-                    e.Notes,
-                    e.Status,
-                    e.ResponsibilityCenterEntry,
-                    e.CreatedDate,
-                    StatusName = GetStatusName(e)
-                }).OrderBy(e => e.ReceiptDate).ThenBy(e => e.ReceiptNo).ToList();
-
-            return Ok(result);
+            if (!CompanyId.HasValue) return Unauthorized();
+            if (!CustomerPagination.IsValid(pageNumber, pageSize)) return BadRequest("Supply both pageNumber (1 or greater) and pageSize (1 to 200), within the supported offset range.");
+            if (!SalesReceiptQuery.IsValidSort(sortBy, sortDirection)) return BadRequest("Unsupported sortBy or sortDirection. Use a supported column and asc or desc.");
+            if (status.HasValue && status is not (-1 or 0 or 1)) return BadRequest("status must be -1 (deleted), 0 (draft) or 1 (posted).");
+            SalesReceiptListCriteria filter;
+            try { filter = string.IsNullOrWhiteSpace(criteria) ? null : JsonConvert.DeserializeObject<SalesReceiptListCriteria>(criteria); }
+            catch (JsonException) { return BadRequest("Invalid criteria JSON."); }
+            if (filter?.UserConfigId == null) return BadRequest("criteria.userConfigId is required.");
+            if (filter.UserConfigId != CompanyId) return Forbid();
+            if (!SalesInvoiceQuery.TryParseCenters(filter.ArrayString, out var centers)) return BadRequest("criteria.arrayString must contain comma-separated positive responsibility center IDs.");
+            return Ok(await service.ListAsync(CompanyId.Value, filter, centers, pageNumber, pageSize, search, sortBy, sortDirection, status, cancellationToken));
         }
 
-        // GET: api/SalesReceipts/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<SalesReceipt>> GetSalesReceipt(int id)
+        public async Task<ActionResult<SalesReceipt>> GetSalesReceipt(int id, CancellationToken cancellationToken = default)
         {
-            var salesReceipt = await _context.SalesReceipts.Where(e => e.Id == id)
-                .Include(e => e.Customer).ThenInclude(e => e.CustomerAddresses).ThenInclude(e => e.CityMunicipality).ThenInclude(e => e.StateProvince)
-                .Include(e => e.Customer).ThenInclude(e => e.CustomerContacts)
-                .Include(e => e.PaymentMode)
-                .Include(e => e.DepositToAccount)
-                .Include(e => e.SalesReceiptDetails).ThenInclude(e => e.Item).ThenInclude(e => e.SalesTaxRate)
-                .Include(e => e.SalesReceiptDetails).ThenInclude(e => e.TaxRate)
-                .Include(e => e.JournalEntries).ThenInclude(e => e.Account).ThenInclude(a => a.Category)
-                .Include(e => e.JournalEntries).ThenInclude(e => e.Customer)
-                .Include(e => e.JournalEntries).ThenInclude(e => e.Supplier)
-                .Include(e => e.InventoryLocation)
-                .SingleOrDefaultAsync();
-
-            if (salesReceipt == null)
-            {
-                return NotFound();
-            }
-
-            return salesReceipt;
+            if (!CompanyId.HasValue) return Unauthorized();
+            var result = await service.GetAsync(CompanyId.Value, id, cancellationToken);
+            return result == null ? NotFound() : result;
         }
-
-        // PUT: api/SalesReceipts/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
         public async Task<IActionResult> PutSalesReceipt(int id, SalesReceipt salesReceipt)
         {
+            if (!CompanyId.HasValue) return Unauthorized();
+            if (salesReceipt.UserConfigId != CompanyId) return Forbid();
             if (id != salesReceipt.Id)
             {
                 return BadRequest();
             }
 
+            if (!await _context.SalesReceipts.AnyAsync(e => e.Id == id && e.UserConfigId == CompanyId.Value)) return NotFound();
+            var validationError = await service.ValidateWriteAsync(CompanyId.Value, id, salesReceipt, HttpContext.RequestAborted);
+            if (validationError != null) return BadRequest(validationError);
             var s = await _context.SalesReceipts.FirstOrDefaultAsync(s => s.ReceiptNo == salesReceipt.ReceiptNo && s.UserConfigId == salesReceipt.UserConfigId && s.Id != id);
             if (s != null)
             {
@@ -151,6 +85,7 @@ namespace negosuite_api.Controllers
             // Sales Receipt Details
             foreach (var e in salesReceipt.SalesReceiptDetails.ToList())
             {
+                e.SalesReceiptId = id;
                 // Convert date to local timezone
                 if (e.Id == 0)
                 {
@@ -176,6 +111,7 @@ namespace negosuite_api.Controllers
             // Journal Entries
             foreach (var e in salesReceipt.JournalEntries.ToList())
             {
+                e.SalesReceiptId = id;
                 e.JournalDate = salesReceipt.ReceiptDate;
                 if (e.Id == 0)
                 {
@@ -222,6 +158,11 @@ namespace negosuite_api.Controllers
         [HttpPost]
         public async Task<ActionResult<SalesReceipt>> PostSalesReceipt(SalesReceipt salesReceipt)
         {
+            if (!CompanyId.HasValue) return Unauthorized();
+            if (salesReceipt.UserConfigId != CompanyId) return Forbid();
+            if (salesReceipt.Id != 0) return BadRequest("New transaction ID must be zero or omitted.");
+            var validationError = await service.ValidateWriteAsync(CompanyId.Value, null, salesReceipt, HttpContext.RequestAborted);
+            if (validationError != null) return BadRequest(validationError);
             // check for auto reference number ///////////////////////////////////////////////////////////
             // if returned is null then not auto generated
             var referenceNo = GetNextTransactionNo(salesReceipt.UserConfigId, salesReceipt.IsPOS ?? false);
@@ -259,7 +200,8 @@ namespace negosuite_api.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteSalesReceipt(int id)
         {
-            var salesReceipt = await _context.SalesReceipts.Where(e => e.Id == id)
+            if (!CompanyId.HasValue) return Unauthorized();
+            var salesReceipt = await _context.SalesReceipts.Where(e => e.Id == id && e.UserConfigId == CompanyId.Value)
                 .Include(e => e.JournalEntries).Include(e => e.SalesReceiptDetails)
                 .SingleOrDefaultAsync();
 
@@ -312,7 +254,7 @@ namespace negosuite_api.Controllers
 
         private bool SalesReceiptExists(int id)
         {
-            return _context.SalesReceipts.Any(e => e.Id == id);
+            return _context.SalesReceipts.Any(e => e.Id == id && e.UserConfigId == CompanyId.Value);
         }
 
 
@@ -371,22 +313,5 @@ namespace negosuite_api.Controllers
             return $"{(isPOS == true ? autoReferenceNoConfig.AutoPOSReferenceNoPrefix : autoReferenceNoConfig.AutoSRReferenceNoPrefix)}{formattedSequence}";
         }
 
-        private static string GetStatusName(SPSalesReceipt receipt)
-        {
-            string status = "";
-            switch (receipt.Status)
-            {
-                case -1:
-                    status = "Deleted";
-                    break;
-                case 0:
-                    status = "Draft";
-                    break;
-                case 1:
-                    status = "Posted";
-                    break;
-            }
-            return status;
-        }
     }
 }

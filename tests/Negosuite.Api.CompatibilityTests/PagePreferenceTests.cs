@@ -34,6 +34,9 @@ public class PagePreferenceTests
     [InlineData("suppliers", "3120", "customers")]
     [InlineData("items", "3130", "customers")]
     [InlineData("item-categories", "3135", "items")]
+    [InlineData("sales-invoices", "4110", "customers")]
+    [InlineData("sales-receipts", "4120", "sales-invoices")]
+    [InlineData("sales-invoice-payments", "4125", "sales-receipts")]
     public async Task Preferences_persist_with_authenticated_user_company_scope_versions_and_reset(string pageKey, string moduleId, string otherPage)
     {
         var connection = new MySqlConnectionStringBuilder(Environment.GetEnvironmentVariable("NEGOSUITE_PHASE3_MYSQL"));
@@ -58,8 +61,8 @@ public class PagePreferenceTests
             inactive.Status = false; denied.UserRoleId = null;
             db.Users.AddRange(first, second, inactive, denied); db.AppVersions.Add(new AppVersion { Id = 1, VersionCode = "test" }); await db.SaveChangesAsync();
             var path = "/api/me/page-preferences/" + pageKey;
-            var column = pageKey switch { "items" => "unit", "item-categories" => "status", _ => "address" };
-            var secondColumn = pageKey == "items" ? "cost" : "tin";
+            var column = pageKey switch { "items" => "unit", "item-categories" => "status", "sales-invoices" => "dueDate", "sales-receipts" => "receiptDate", "sales-invoice-payments" => "referenceDate", _ => "address" };
+            var secondColumn = pageKey switch { "items" => "cost", "sales-invoices" or "sales-receipts" or "sales-invoice-payments" => "balance", _ => "tin" };
             void As(int id, string companyUuid = null)
             {
                 host.Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Token(id));

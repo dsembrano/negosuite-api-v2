@@ -32,3 +32,7 @@ Supplier API changes: [refactoring, compatibility, and opt-in pagination](docs/s
 Items API changes: [refactoring, compatibility, filtering, sorting, and pagination](docs/items-refactoring.md).
 
 Item Categories API changes: [refactoring, compatibility, filtering, sorting, and pagination](docs/item-categories-refactoring.md).
+
+Sales Invoices API changes: [compatibility, SQL filtering, sorting, pagination, and transaction checks](docs/sales-invoices-refactoring.md).
+
+Sales Receipts and Invoice Payments: [compatibility, SQL pagination/search/sorting, and transaction checks](docs/sales-collections-refactoring.md).

@@ -15,3 +15,7 @@ All 114 API compatibility tests passed against isolated MySQL fixtures, includin
 Items support: GET/PUT api/me/page-preferences/items uses Item permission 3130 and the existing preference table/version contract. Allowed optional columns: code, itemCategoryName, typeName, unit, rate, cost, toSell, toPurchase, trackInventory, reorderPoint, status. See docs/items-refactoring.md.
 
 Item Categories support: GET/PUT `api/me/page-preferences/item-categories` uses Item Category permission `3135` and the existing preference table/version contract. The optional column is `status`. Mandatory `name` and unknown keys are ignored. See [Item Categories API refactoring](item-categories-refactoring.md).
+
+Sales Invoices support: GET/PUT `api/me/page-preferences/sales-invoices` uses Sales Invoice permission `4110` and the existing preference table/version contract. Invoice number is mandatory; optional columns include invoiceDate, dueDate, purchaseOrderNo, customerName, customerTIN, billing/shipping address/contact fields, amount, balance, paymentTermName, notes and statusName. See [Sales Invoices API refactoring](sales-invoices-refactoring.md).
+
+Sales Receipts and Invoice Payments: GET/PUT `api/me/page-preferences/sales-receipts` uses module `4120`; `api/me/page-preferences/sales-invoice-payments` uses module `4125`. Mandatory receiptNo/referenceNo are ignored. Optional columns follow each module's fixed list columns, including amount, balance, paymentModeName and statusName. See [Sales collections refactoring](sales-collections-refactoring.md).

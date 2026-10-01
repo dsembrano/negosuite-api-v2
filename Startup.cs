@@ -89,6 +89,9 @@ namespace negosuite_api
             services.AddScoped<SupplierService>();
             services.AddScoped<ItemService>();
             services.AddScoped<ItemCategoryService>();
+            services.AddScoped<SalesInvoiceService>();
+            services.AddScoped<SalesReceiptService>();
+            services.AddScoped<SalesInvoicePaymentService>();
 
         }
 
