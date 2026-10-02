@@ -1,118 +1,39 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using negosuite_api.Contracts.Administration;
+using negosuite_api.Contracts.ReferenceData;
 using negosuite_api.Models;
+using negosuite_api.Services;
 
-namespace negosuite_api.Controllers
+namespace negosuite_api.Controllers;
+
+[Authorize, ApiController, Route("api/industries")]
+[TypeFilter(typeof(AuthenticatedUserFilter)), TypeFilter(typeof(AdministrationExceptionFilter))]
+public class IndustriesController : ControllerBase
 {
-    [Authorize]
-    // [TypeFilter(typeof(ConfigUuidFilter))]
-    [Route("api/industries")]
-    [ApiController]
-    public class IndustriesController : ControllerBase
-    {
-        private readonly negosuiteContext _context;
+    private readonly IndustryService service;
+    public IndustriesController(IndustryService service) => this.service = service;
+    private User Actor => (User)HttpContext.Items[CompanyAccessService.ActorKey];
 
-        public IndustriesController(negosuiteContext context)
-        {
-            _context = context;
-        }
+    [HttpGet]
+    public async Task<ActionResult> GetList([FromQuery] AdministrationListOptions options, [FromQuery] ReferenceDataFilter filter, CancellationToken ct) =>
+        Ok(await service.ListAsync(options, filter, ct));
 
-        // GET: api/Industries
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Industry>>> GetIndustries()
-        {
-            var result = await _context.Industries
-                .OrderBy(i => i.Name)
-                .Select(i => new
-                {
-                    i.Id,
-                    i.Name
-                }).ToListAsync();
+    [HttpGet("{id}")]
+    public async Task<ActionResult<IndustryDetailDto>> GetIndustry(int id, CancellationToken ct)
+    { var value = await service.GetAsync(id, ct); return value == null ? NotFound() : value; }
 
-            return Ok(result);
-        }
+    [HttpPost]
+    public async Task<ActionResult<IndustryDetailDto>> PostIndustry(IndustryCreateRequest input, CancellationToken ct)
+    { var value = await service.SaveAsync(Actor, null, input, ct); return CreatedAtAction(nameof(GetIndustry), new { id = value.Id }, value); }
 
-        // GET: api/Industries/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Industry>> GetIndustry(int id)
-        {
-            var industry = await _context.Industries.FindAsync(id);
+    [HttpPut("{id}")]
+    public async Task<IActionResult> PutIndustry(int id, IndustryUpdateRequest input, CancellationToken ct)
+    { await service.SaveAsync(Actor, id, input, ct); return NoContent(); }
 
-            if (industry == null)
-            {
-                return NotFound();
-            }
-
-            return industry;
-        }
-
-        // PUT: api/Industries/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutIndustry(int id, Industry industry)
-        {
-            if (id != industry.Id)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(industry).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!IndustryExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return NoContent();
-        }
-
-        // POST: api/Industries
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
-        public async Task<ActionResult<Industry>> PostIndustry(Industry industry)
-        {
-            _context.Industries.Add(industry);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction("GetIndustry", new { id = industry.Id }, industry);
-        }
-
-        // DELETE: api/Industries/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteIndustry(int id)
-        {
-            var industry = await _context.Industries.FindAsync(id);
-            if (industry == null)
-            {
-                return NotFound();
-            }
-
-            _context.Industries.Remove(industry);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
-        }
-
-        private bool IndustryExists(int id)
-        {
-            return _context.Industries.Any(e => e.Id == id);
-        }
-    }
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteIndustry(int id, CancellationToken ct)
+    { await service.DeleteAsync(id, ct); return NoContent(); }
 }

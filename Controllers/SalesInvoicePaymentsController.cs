@@ -1,4 +1,5 @@
 using System;
+using negosuite_api.Contracts.Transactions;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -54,15 +55,16 @@ namespace negosuite_api.Controllers
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<SalesInvoicePayment>> GetSalesInvoicePayment(int id, CancellationToken cancellationToken = default)
+        public async Task<ActionResult<SalesInvoicePaymentDetailDto>> GetSalesInvoicePayment(int id, CancellationToken cancellationToken = default)
         {
             if (!CompanyId.HasValue) return Unauthorized();
             var result = await service.GetAsync(CompanyId.Value, id, cancellationToken);
-            return result == null ? NotFound() : result;
+            return result == null ? NotFound() : new TransactionResponseMapping().Map(result);
         }
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutSalesInvoicePayment(int id, SalesInvoicePayment salesInvoicePayment)
+        public async Task<IActionResult> PutSalesInvoicePayment(int id, SalesInvoicePaymentUpdateRequest request)
         {
+            var salesInvoicePayment = TransactionWriteMapping.Map(request);
             if (!CompanyId.HasValue) return Unauthorized();
             if (salesInvoicePayment.UserConfigId != CompanyId) return Forbid();
             if (id != salesInvoicePayment.Id)
@@ -181,8 +183,9 @@ namespace negosuite_api.Controllers
         // POST: api/SalesInvoicePayments
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<SalesInvoicePayment>> PostSalesInvoicePayment(SalesInvoicePayment salesInvoicePayment)
+        public async Task<ActionResult<SalesInvoicePaymentDetailDto>> PostSalesInvoicePayment(SalesInvoicePaymentCreateRequest request)
         {
+            var salesInvoicePayment = TransactionWriteMapping.Map(request);
             if (!CompanyId.HasValue) return Unauthorized();
             if (salesInvoicePayment.UserConfigId != CompanyId) return Forbid();
             if (salesInvoicePayment.Id != 0) return BadRequest("New transaction ID must be zero or omitted.");
@@ -233,7 +236,7 @@ namespace negosuite_api.Controllers
 
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetSalesInvoicePayment", new { id = salesInvoicePayment.Id }, salesInvoicePayment);
+            return CreatedAtAction("GetSalesInvoicePayment", new { id = salesInvoicePayment.Id }, new TransactionResponseMapping().Map(salesInvoicePayment));
         }
 
         // DELETE: api/SalesInvoicePayments/5

@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using negosuite_api.Models;
 
 #nullable disable
@@ -36,7 +36,6 @@ namespace negosuite_api.Models
         public virtual DbSet<Debtor> Debtors { get; set; }
         public virtual DbSet<DebtorType> DebtorTypes { get; set; }
         public virtual DbSet<GeneralJournal> GeneralJournals { get; set; }
-        public virtual DbSet<SPGeneralJournal> SPGeneralJournals { get; set; }
         public virtual DbSet<GeneralLedger> GeneralLedgers { get; set; }
         public virtual DbSet<Industry> Industries { get; set; }
         public virtual DbSet<Item> Items { get; set; }
@@ -48,19 +47,14 @@ namespace negosuite_api.Models
         public virtual DbSet<ResponsibilityCenterLedger> ResponsibilityCenterLedgers { get; set; }
         public virtual DbSet<ResponsibilityCenterType> ResponsibilityCenterTypes { get; set; }
         public virtual DbSet<Bill> Bills { get; set; }
-        public virtual DbSet<SPBill> SPBills { get; set; }
         public virtual DbSet<BillDetail> BillDetails { get; set; }
         public virtual DbSet<BillPayment> BillPayments { get; set; }
         public virtual DbSet<ExpensePayment> ExpensePayments { get; set; }
         public virtual DbSet<Payment> Payments { get; set; }
-        public virtual DbSet<SPPayment> SPPayments { get; set; }
         public virtual DbSet<SalesInvoice> SalesInvoices { get; set; }
-        public virtual DbSet<SPSalesInvoice> SPSalesInvoices { get; set; }
         public virtual DbSet<SalesInvoicePayment> SalesInvoicePayments { get; set; }
-        public virtual DbSet<SPSalesInvoicePayment> SPSalesInvoicePayments { get; set; }
         public virtual DbSet<SalesInvoiceDetail> SalesInvoiceDetails { get; set; }
         public virtual DbSet<SalesReceipt> SalesReceipts { get; set; }
-        public virtual DbSet<SPSalesReceipt> SPSalesReceipts { get; set; }
         public virtual DbSet<SalesReceiptDetail> SalesReceiptDetails { get; set; }
         public virtual DbSet<StateProvince> StateProvinces { get; set; }
         public virtual DbSet<Supplier> Suppliers { get; set; }
@@ -81,13 +75,10 @@ namespace negosuite_api.Models
         public virtual DbSet<SalesTransaction> SalesTransactions { get; set; }
         public virtual DbSet<SalesTransactionDetail> SalesTransactionDetails { get; set; }
         public virtual DbSet<StockTransfer> StockTransfers { get; set; }
-        public virtual DbSet<SPStockTransfer> SPStockTransfers { get; set; }
         public virtual DbSet<StockTransferDetail> StockTransferDetails { get; set; }
         public virtual DbSet<StockIssuance> StockIssuances { get; set; }
-        public virtual DbSet<SPStockIssuance> SPStockIssuances { get; set; }
         public virtual DbSet<StockIssuanceDetail> StockIssuanceDetails { get; set; }
         public virtual DbSet<InventoryAdjustment> InventoryAdjustments { get; set; }
-        public virtual DbSet<SPInventoryAdjustment> SPInventoryAdjustments { get; set; }
         public virtual DbSet<InventoryAdjustmentDetail> InventoryAdjustmentDetails { get; set; }
         public virtual DbSet<ResponsibilityCenterJournalEntry> ResponsibilityCenterJournalEntries { get; set; }
         public virtual DbSet<JournalEntrySummary> JournalEntrySummaries { get; set; }
@@ -102,7 +93,6 @@ namespace negosuite_api.Models
         public virtual DbSet<CustomerSale> CustomerSales { get; set; }
         public virtual DbSet<ReceivingReport> ReceivingReports { get; set; }
         public virtual DbSet<ReceivingReportDetail> ReceivingReportDetails { get; set; }
-        public virtual DbSet<SPReceivingReport> SPReceivingReports { get; set; }
         public virtual DbSet<PivotedInventoryWithJsonArray> PivotedInventoryWithJsonArray { get; set; }
         public virtual DbSet<AppVersion> AppVersions { get; set; }
         public virtual DbSet<SalesMonthlyTrend> SalesMonthlyTrend { get; set; }
@@ -241,6 +231,7 @@ namespace negosuite_api.Models
             modelBuilder.Entity<CityMunicipality>(entity =>
             {
                 entity.ToTable("citymunicipality");
+                entity.Property(e => e.PostalCode).HasMaxLength(20);
 
                 entity.HasIndex(e => e.StateProvinceId, "FK_CityMunicipality_StateProvince");
 
@@ -390,6 +381,7 @@ namespace negosuite_api.Models
             modelBuilder.Entity<Currency>(entity =>
             {
                 entity.ToTable("currency");
+                entity.Property(e => e.AltCode).HasMaxLength(15);
 
                 entity.Property(e => e.Code)
                     .IsRequired()
@@ -655,6 +647,7 @@ namespace negosuite_api.Models
             modelBuilder.Entity<PaymentMode>(entity =>
             {
                 entity.ToTable("paymentmode");
+                entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
             });
 
             modelBuilder.Entity<ResponsibilityCenter>(entity =>
@@ -672,7 +665,9 @@ namespace negosuite_api.Models
 
                 entity.Property(e => e.Name)
                     .IsRequired()
-                    .HasMaxLength(50);
+                    .HasMaxLength(150);
+                entity.Property(e => e.RequiredBy).HasMaxLength(45);
+                entity.Property(e => e.RequiredByTags).HasColumnType("json");
             });
 
             modelBuilder.Entity<ResponsibilityCenterLedger>(entity =>
@@ -847,6 +842,8 @@ namespace negosuite_api.Models
             modelBuilder.Entity<TaxRate>(entity =>
             {
                 entity.ToTable("taxrate");
+                entity.Property(e => e.Rate).HasPrecision(20, 4);
+                entity.Property(e => e.ApplyToSalesOrPurchase).HasMaxLength(2);
 
                 entity.Property(e => e.Name)
                     .IsRequired()
@@ -1005,7 +1002,7 @@ namespace negosuite_api.Models
 
                 entity.Property(e => e.Code)
                     .IsRequired()
-                    .HasMaxLength(20);
+                    .HasMaxLength(10);
 
                 entity.Property(e => e.Name)
                     .IsRequired()
@@ -1015,6 +1012,9 @@ namespace negosuite_api.Models
             modelBuilder.Entity<NavigationItem>(entity =>
             {
                 entity.ToTable("navigationitem");
+                entity.Property(e => e.Type).HasMaxLength(100);
+                entity.Property(e => e.Icon).HasMaxLength(100);
+                entity.Property(e => e.Link).HasMaxLength(100);
 
                 
                 entity.Property(e => e.Title)
@@ -1098,6 +1098,8 @@ namespace negosuite_api.Models
             modelBuilder.Entity<InventoryLocation>(entity =>
             {
                 entity.ToTable("inventorylocation");
+                entity.Property(e => e.Name).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.Code).HasMaxLength(10);
             });
 
             modelBuilder.Entity<StockTransfer>(entity =>
@@ -1173,66 +1175,6 @@ namespace negosuite_api.Models
             modelBuilder.Entity<SalesTransactionFunction>(entity =>
             {
                 entity.ToFunction("GetSalesTransactions");
-                entity.HasNoKey();
-            });
-
-            modelBuilder.Entity<SPSalesInvoice>(entity =>
-            {
-                entity.ToFunction("GetSalesInvoices");
-                entity.HasNoKey();
-            });
-
-            modelBuilder.Entity<SPSalesReceipt>(entity =>
-            {
-                entity.ToFunction("GetSalesReceipts");
-                entity.HasNoKey();
-            });
-
-            modelBuilder.Entity<SPPayment>(entity =>
-            {
-                entity.ToFunction("GetPayments");
-                entity.HasNoKey();
-            });
-
-            modelBuilder.Entity<SPSalesInvoicePayment>(entity =>
-            {
-                entity.ToFunction("GetSalesInvoicePayments");
-                entity.HasNoKey();
-            });
-
-            modelBuilder.Entity<SPBill>(entity =>
-            {
-                entity.ToFunction("GetBills");
-                entity.HasNoKey();
-            });
-
-            modelBuilder.Entity<SPStockIssuance>(entity =>
-            {
-                entity.ToFunction("GetStockIssuances");
-                entity.HasNoKey();
-            });
-
-            modelBuilder.Entity<SPInventoryAdjustment>(entity =>
-            {
-                entity.ToFunction("GetInventoryAdjustments");
-                entity.HasNoKey();
-            });
-
-            modelBuilder.Entity<SPStockTransfer>(entity =>
-            {
-                entity.ToFunction("GetStockTransfers");
-                entity.HasNoKey();
-            });
-
-            modelBuilder.Entity<SPReceivingReport>(entity =>
-            {
-                entity.ToFunction("GetReceivingReports");
-                entity.HasNoKey();
-            });
-
-            modelBuilder.Entity<SPGeneralJournal>(entity =>
-            {
-                entity.ToFunction("GetGeneralJournals");
                 entity.HasNoKey();
             });
 
@@ -1329,6 +1271,9 @@ namespace negosuite_api.Models
             {
                 entity.ToTable("discounttype");
                 entity.HasKey(e => e.Id);
+                entity.Property(e => e.Name).IsRequired().HasMaxLength(150);
+                entity.Property(e => e.Rate).HasPrecision(20, 4);
+                entity.Property(e => e.DiscountAmount).HasPrecision(20, 4);
             });
 
             modelBuilder.Entity<TransactionSequence>(entity =>

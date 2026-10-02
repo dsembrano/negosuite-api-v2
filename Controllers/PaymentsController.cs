@@ -1,4 +1,10 @@
-﻿using System;
+using System;
+using negosuite_api.Contracts.Transactions;
+using System.Threading;
+using Microsoft.Extensions.DependencyInjection;
+using negosuite_api.Contracts.Customers;
+using negosuite_api.Contracts.Payments;
+using negosuite_api.Services;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -15,138 +21,57 @@ namespace negosuite_api.Controllers
     [TypeFilter(typeof(ConfigUuidFilter))]
     [Route("api/payments")]
     [ApiController]
-    public class PaymentsController : ControllerBase
+    public partial class PaymentsController : ControllerBase
     {
         private readonly negosuiteContext _context;
+        private readonly PaymentService service;
 
-        public PaymentsController(negosuiteContext context)
+        [ActivatorUtilitiesConstructor]
+        public PaymentsController(negosuiteContext context, PaymentService service)
         {
             _context = context;
+            this.service = service;
         }
 
-        /*
-        [HttpGet]
-        public async Task<ActionResult> GetPayments(string criteria)
-        {
-
-            SelectCriteria selectCriteria = JsonConvert.DeserializeObject<SelectCriteria>(criteria);
-
-            var result = await _context.Payments
-                .Where(e => selectCriteria.ReferenceNo != null ? e.ReferenceNo == selectCriteria.ReferenceNo : true)
-                .Where(a => a.UserConfigId == selectCriteria.UserConfigId)
-                .Where(e => (selectCriteria != null && selectCriteria.SupplierId.HasValue) ? e.SupplierId == selectCriteria.SupplierId : true)
-                .Where(e => (selectCriteria != null && selectCriteria.CustomerId.HasValue) ? e.CustomerId == selectCriteria.CustomerId : true)
-                .Where(e => selectCriteria.PeriodStart.HasValue && selectCriteria.PeriodEnd.HasValue ? e.ReferenceDate >= selectCriteria.PeriodStart && e.ReferenceDate <= selectCriteria.PeriodEnd : true)
-                .Where(c => selectCriteria != null && selectCriteria.ShowDeleted == true ? true : c.Status != GeneralJournalsController.STATUS_DELETED)
-                .Select(e => new
-                {
-                    e.Id,
-                    e.ReferenceNo,
-                    e.ReferenceDate,
-                    e.SupplierId,
-                    SupplierName = e.Supplier.Name,
-                    e.CustomerId,
-                    CustomerrName = e.Customer.Name,
-                    e.Payee,
-                    e.PaymentModeId,
-                    PaymentModeName = e.PaymentMode.Name,
-                    e.PaidThroughAccountId,
-                    PaidThroughAccountName = e.PaidThroughAccount.Name,
-                    e.CheckNo,
-                    e.Amount,
-                    e.Balance,
-                    e.Status,
-                    StatusName = GetStatusName(e)
-                }).OrderBy(e => e.ReferenceDate).ThenBy(e => e.ReferenceNo).ToListAsync();
-
-            return Ok(result);
-
-        }*/
-
-
+        public PaymentsController(negosuiteContext context) : this(context, new PaymentService(context)) { }
+        private int? CompanyId => HttpContext?.Items[ConfigUuidFilter.CompanyIdKey] as int?;
 
         [HttpGet]
-        public async Task<ActionResult> GetPayments(string criteria)
+        public async Task<ActionResult> GetPayments(string criteria, [FromQuery] int? pageNumber = null,
+            [FromQuery] int? pageSize = null, CancellationToken cancellationToken = default,
+            [FromQuery] string search = null, [FromQuery] string sortBy = null, [FromQuery] string sortDirection = null,
+            [FromQuery] short? status = null, [FromQuery] bool? isBillPayment = null)
         {
-            SelectCriteria selectCriteria = JsonConvert.DeserializeObject<SelectCriteria>(criteria);
-
-            var userConfigId = selectCriteria.UserConfigId.ToString();
-            var periodStart = selectCriteria.PeriodStart?.ToString("yyyy-MM-dd");
-            var periodEnd = selectCriteria.PeriodEnd?.ToString("yyyy-MM-dd"); ;
-            var supplierId = (selectCriteria.SupplierId != null) ? selectCriteria.SupplierId.ToString() : "";
-            var referenceNo = (selectCriteria.ReferenceNo != null) ? selectCriteria.ReferenceNo.ToString() : "";
-            var arrayString = string.IsNullOrEmpty(selectCriteria.ArrayString) ? "" : selectCriteria.ArrayString;
-
-            var list = await _context.SPPayments
-                .FromSqlInterpolated($"CALL GetPayments({userConfigId}, {periodStart}, {periodEnd}, {supplierId}, {referenceNo}, {arrayString})")
-                .ToListAsync();
-
-            var result = list
-                .Select(e => new
-                {
-                    e.Id,
-                    e.ReferenceNo,
-                    e.ReferenceDate,
-                    e.SupplierId,
-                    SupplierName = e.SupplierName,
-                    e.CustomerId,
-                    CustomerrName = e.CustomerName,
-                    e.Payee,
-                    e.PaymentModeId,
-                    PaymentModeName = e.PaymentModeName,
-                    e.PaidThroughAccountId,
-                    PaidThroughAccountName = e.PaidThroughAccountName,
-                    e.CheckNo,
-                    e.Amount,
-                    e.Balance,
-                    e.ResponsibilityCenterEntry,
-                    e.Notes,
-                    e.Status,
-                    StatusName = GetStatusName(e)
-                }).OrderBy(e => e.ReferenceDate).ThenBy(e => e.ReferenceNo).ToList();
-
-            return Ok(result);
-
+            if (!CompanyId.HasValue) return Unauthorized();
+            if (!CustomerPagination.IsValid(pageNumber, pageSize)) return BadRequest("Supply both pageNumber (1 or greater) and pageSize (1 to 200), within the supported offset range.");
+            if (!PaymentQuery.IsValidSort(sortBy, sortDirection)) return BadRequest("Unsupported sortBy or sortDirection. Use a supported column and asc or desc.");
+            if (status.HasValue && status is not (-1 or 0 or 1)) return BadRequest("status must be -1 (deleted), 0 (draft) or 1 (posted).");
+            PaymentListCriteria filter;
+            try { filter = string.IsNullOrWhiteSpace(criteria) ? null : JsonConvert.DeserializeObject<PaymentListCriteria>(criteria); }
+            catch (JsonException) { return BadRequest("Invalid criteria JSON."); }
+            if (filter?.UserConfigId == null) return BadRequest("criteria.userConfigId is required.");
+            if (filter.UserConfigId != CompanyId) return Forbid();
+            if (!SalesInvoiceQuery.TryParseCenters(filter.ArrayString, out var centers)) return BadRequest("criteria.arrayString must contain comma-separated positive responsibility center IDs.");
+            return Ok(await service.ListAsync(CompanyId.Value, filter, centers, pageNumber, pageSize, search, sortBy, sortDirection, status, isBillPayment, cancellationToken));
         }
-
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<Payment>> GetPayment(int id)
+        public async Task<ActionResult<PaymentDetailDto>> GetPayment(int id, CancellationToken cancellationToken = default)
         {
-            var payment = await _context.Payments.Where(e => e.Id == id)
-               .Include(e => e.Supplier)
-               .Include(e => e.Customer)
-               .Include(e => e.PaymentMode)
-               .Include(e => e.PaidThroughAccount)
-               .Include(j => j.JournalEntries).ThenInclude(j => j.Account).ThenInclude(a => a.Category)
-               .Include(j => j.JournalEntries).ThenInclude(j => j.Customer)
-               .Include(j => j.JournalEntries).ThenInclude(j => j.Supplier)
-               .Include(j => j.JournalEntries).ThenInclude(j => j.TaxRate)
-               .Include(j => j.JournalEntries).ThenInclude(j => j.PaymentToJournalEntry)
-               .SingleOrDefaultAsync();
-
-            // Remove deleted entries unles main status is deleted
-            if (payment.Status != GeneralJournalsController.STATUS_DELETED)
-            {
-                payment.JournalEntries = payment.JournalEntries.Where(j => j.Status != GeneralJournalsController.STATUS_DELETED).ToList();
-            }
-
-            if (payment == null)
-            {
-                return NotFound();
-            }
-
-            return payment;
+            if (!CompanyId.HasValue) return Unauthorized();
+            var result = await service.GetAsync(CompanyId.Value, id, cancellationToken);
+            return result == null ? NotFound() : result;
         }
-
-
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutPayment(int id, Payment Payment)
+        public async Task<IActionResult> PutPayment(int id, PaymentUpdateRequest request)
         {
-            if (id != Payment.Id)
-            {
-                return BadRequest();
-            }
+            var Payment = TransactionWriteMapping.Map(request);
+            if (!CompanyId.HasValue) return Unauthorized();
+            if (Payment.UserConfigId != CompanyId) return Forbid();
+            if (id != Payment.Id) return BadRequest();
+            if (!await _context.Payments.AnyAsync(p => p.Id == id && p.UserConfigId == CompanyId.Value)) return NotFound();
+            var validationError = await service.ValidateWriteAsync(CompanyId.Value, id, Payment, false, HttpContext.RequestAborted);
+            if (validationError != null) return BadRequest(validationError);
 
             var p = await _context.Payments.FirstOrDefaultAsync(p => p.ReferenceNo == Payment.ReferenceNo && p.UserConfigId == Payment.UserConfigId && p.Id != id);
             if (p != null)
@@ -159,6 +84,7 @@ namespace negosuite_api.Controllers
             // Journal Entries
             foreach (var e in Payment.JournalEntries.ToList())
             {
+                e.PaymentId = id;
                 e.JournalDate = Payment.ReferenceDate;
 
                 if (e.Id == 0)
@@ -205,8 +131,14 @@ namespace negosuite_api.Controllers
 
 
         [HttpPost]
-        public async Task<ActionResult<Payment>> PostPayment(Payment Payment)
+        public async Task<ActionResult<PaymentDetailDto>> PostPayment(PaymentCreateRequest request)
         {
+            var Payment = TransactionWriteMapping.Map(request);
+            if (!CompanyId.HasValue) return Unauthorized();
+            if (Payment.UserConfigId != CompanyId) return Forbid();
+            if (Payment.Id != 0) return BadRequest("New payments must have an ID of zero.");
+            var validationError = await service.ValidateWriteAsync(CompanyId.Value, null, Payment, false, HttpContext.RequestAborted);
+            if (validationError != null) return BadRequest(validationError);
 
             var p = await _context.Payments.FirstOrDefaultAsync(p => p.ReferenceNo == Payment.ReferenceNo && p.UserConfigId == Payment.UserConfigId);
             if (p != null)
@@ -225,15 +157,16 @@ namespace negosuite_api.Controllers
             }
 
             await _context.SaveChangesAsync();
-            return CreatedAtAction("GetPayment", new { id = Payment.Id }, Payment);
+            return CreatedAtAction("GetPayment", new { id = Payment.Id }, new TransactionResponseMapping().Map(Payment));
         }
 
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeletePayment(int id)
         {
+            if (!CompanyId.HasValue) return Unauthorized();
             var Payment = await _context.Payments
-                .Where(e => e.Id == id)
+                .Where(e => e.Id == id && e.UserConfigId == CompanyId.Value)
                 .Include(e => e.JournalEntries).SingleOrDefaultAsync();
 
             if (Payment == null)
@@ -272,12 +205,15 @@ namespace negosuite_api.Controllers
 
         [Route("bill/{id}")]
         [HttpPut]
-        public async Task<IActionResult> PutBillPayment(int id, Payment billPayment)
+        public async Task<IActionResult> PutBillPayment(int id, PaymentUpdateRequest request)
         {
-            if (id != billPayment.Id)
-            {
-                return BadRequest();
-            }
+            var billPayment = TransactionWriteMapping.Map(request);
+            if (!CompanyId.HasValue) return Unauthorized();
+            if (billPayment.UserConfigId != CompanyId) return Forbid();
+            if (id != billPayment.Id) return BadRequest();
+            if (!await _context.Payments.AnyAsync(p => p.Id == id && p.UserConfigId == CompanyId.Value)) return NotFound();
+            var validationError = await service.ValidateWriteAsync(CompanyId.Value, id, billPayment, true, HttpContext.RequestAborted);
+            if (validationError != null) return BadRequest(validationError);
 
             var config = await _context.Configs.FirstOrDefaultAsync(e => e.Id == billPayment.UserConfigId);
 
@@ -291,12 +227,13 @@ namespace negosuite_api.Controllers
             // Journal Entries
             foreach (var e in billPayment.JournalEntries.ToList())
             {
+                e.PaymentId = id;
                 e.JournalDate = billPayment.ReferenceDate;
 
                 JournalEntry invoiceJE = null;
                 if (e.AccountId == config.APTradeAccountId && e.PaymentToJournalEntryId != null)
                 {
-                    invoiceJE = await _context.JournalEntries.FindAsync(e.PaymentToJournalEntryId);
+                    invoiceJE = await _context.JournalEntries.SingleOrDefaultAsync(j => j.Id == e.PaymentToJournalEntryId && j.UserConfigId == CompanyId.Value);
                     if (invoiceJE == null) return BadRequest("Bill payment journal entry not found.");
                 }
 
@@ -312,7 +249,8 @@ namespace negosuite_api.Controllers
                         invoiceJE.LastUpdatedDate = DateTime.Now;
                         _context.Entry(invoiceJE).State = EntityState.Modified;
 
-                        var bill = await _context.Bills.FindAsync(invoiceJE.BillId);
+                        var bill = await _context.Bills.SingleOrDefaultAsync(b => b.Id == invoiceJE.BillId && b.UserConfigId == CompanyId.Value);
+                        if (bill == null) return BadRequest("Bill target not found for this company.");
                         bill.Balance = invoiceJE.Balance;
                         bill.LastUpdatedDate = DateTime.Now;
                         _context.Entry(bill).State = EntityState.Modified;
@@ -334,12 +272,13 @@ namespace negosuite_api.Controllers
                             invoiceJE.LastUpdatedDate = DateTime.Now;
                             _context.Entry(invoiceJE).State = EntityState.Modified;
 
-                            var bill = await _context.Bills.FindAsync(invoiceJE.BillId);
+                            var bill = await _context.Bills.SingleOrDefaultAsync(b => b.Id == invoiceJE.BillId && b.UserConfigId == CompanyId.Value);
+                            if (bill == null) return BadRequest("Bill target not found for this company.");
                             bill.Balance = invoiceJE.Balance;
                             bill.LastUpdatedDate = DateTime.Now;
                             _context.Entry(bill).State = EntityState.Modified;
                         }
-                    } 
+                    }
                     else
                     {
                         e.LastUpdatedDate = DateTime.Now;
@@ -377,8 +316,14 @@ namespace negosuite_api.Controllers
         // Post Bill Payment
         [Route("bill")]
         [HttpPost]
-        public async Task<ActionResult<Payment>> PostBillPayment(Payment billPayment)
+        public async Task<ActionResult<PaymentDetailDto>> PostBillPayment(PaymentCreateRequest request)
         {
+            var billPayment = TransactionWriteMapping.Map(request);
+            if (!CompanyId.HasValue) return Unauthorized();
+            if (billPayment.UserConfigId != CompanyId) return Forbid();
+            if (billPayment.Id != 0) return BadRequest("New payments must have an ID of zero.");
+            var validationError = await service.ValidateWriteAsync(CompanyId.Value, null, billPayment, true, HttpContext.RequestAborted);
+            if (validationError != null) return BadRequest(validationError);
             var config = await _context.Configs.FirstOrDefaultAsync(e => e.Id == billPayment.UserConfigId);
 
             if (config == null || config.APTradeAccountId == null)
@@ -398,13 +343,14 @@ namespace negosuite_api.Controllers
                 // Debit: Subtract payment amount to bill balance
                 if (e.AccountId == config.APTradeAccountId && e.PaymentToJournalEntryId != null)
                 {
-                    var billJE = await _context.JournalEntries.FindAsync(e.PaymentToJournalEntryId);
+                    var billJE = await _context.JournalEntries.SingleOrDefaultAsync(j => j.Id == e.PaymentToJournalEntryId && j.UserConfigId == CompanyId.Value);
                     if (billJE == null) return BadRequest("Data integrity error. Missing bill record.");
                     billJE.Balance = billJE.Balance - e.Amount;
                     billJE.LastUpdatedDate = DateTime.Now;
                     _context.Entry(billJE).State = EntityState.Modified;
 
-                    var bill = await _context.Bills.FindAsync(billJE.BillId);
+                    var bill = await _context.Bills.SingleOrDefaultAsync(b => b.Id == billJE.BillId && b.UserConfigId == CompanyId.Value);
+                    if (bill == null) return BadRequest("Bill target not found for this company.");
                     bill.Balance = billJE.Balance;
                     bill.LastUpdatedDate = DateTime.Now;
                     _context.Entry(bill).State = EntityState.Modified;
@@ -412,7 +358,7 @@ namespace negosuite_api.Controllers
             }
 
             await _context.SaveChangesAsync();
-            return CreatedAtAction("GetPayment", new { id = billPayment.Id }, billPayment);
+            return CreatedAtAction("GetPayment", new { id = billPayment.Id }, new TransactionResponseMapping().Map(billPayment));
         }
 
 
@@ -420,7 +366,8 @@ namespace negosuite_api.Controllers
         [HttpDelete]
         public async Task<IActionResult> DeleteBillPayment(int id)
         {
-            var billPayment = await _context.Payments.Where(e => e.Id == id)
+            if (!CompanyId.HasValue) return Unauthorized();
+            var billPayment = await _context.Payments.Where(e => e.Id == id && e.UserConfigId == CompanyId.Value)
                 .Include(e => e.JournalEntries).SingleOrDefaultAsync();
 
             if (billPayment == null)
@@ -435,6 +382,9 @@ namespace negosuite_api.Controllers
                 return BadRequest();
             }
 
+            var validationError = await service.ValidateTargetsAsync(CompanyId.Value, billPayment.JournalEntries.Where(j => j.Status != -1), true, HttpContext.RequestAborted);
+            if (validationError != null) return BadRequest(validationError);
+
             // Journal Entries
             foreach (var e in billPayment.JournalEntries.Where(e => e.Status != GeneralJournalsController.STATUS_DELETED).ToList())
             {
@@ -443,7 +393,7 @@ namespace negosuite_api.Controllers
                 JournalEntry invoiceJE = null;
                 if (e.AccountId == config.APTradeAccountId && e.PaymentToJournalEntryId != null)
                 {
-                    invoiceJE = await _context.JournalEntries.FindAsync(e.PaymentToJournalEntryId);
+                    invoiceJE = await _context.JournalEntries.SingleOrDefaultAsync(j => j.Id == e.PaymentToJournalEntryId && j.UserConfigId == CompanyId.Value);
                     if (invoiceJE != null)
                     {
                         // Credit AP: Subtract payment amount to bill journal entry balance
@@ -451,7 +401,8 @@ namespace negosuite_api.Controllers
                         invoiceJE.LastUpdatedDate = DateTime.Now;
                         _context.Entry(invoiceJE).State = EntityState.Modified;
 
-                        var bill = await _context.Bills.FindAsync(invoiceJE.BillId);
+                        var bill = await _context.Bills.SingleOrDefaultAsync(b => b.Id == invoiceJE.BillId && b.UserConfigId == CompanyId.Value);
+                        if (bill == null) return BadRequest("Bill target not found for this company.");
                         bill.Balance = invoiceJE.Balance;
                         bill.LastUpdatedDate = DateTime.Now;
                         _context.Entry(bill).State = EntityState.Modified;
@@ -503,25 +454,7 @@ namespace negosuite_api.Controllers
 
         private bool PaymentExists(int id)
         {
-            return _context.Payments.Any(e => e.Id == id);
-        }
-
-        private static string GetStatusName(SPPayment payment)
-        {
-            string status = "";
-            switch (payment.Status)
-            {
-                case -1:
-                    status = "Deleted";
-                    break;
-                case 0:
-                    status = "Draft";
-                    break;
-                case 1:
-                    status = "Posted";
-                    break;
-            }
-            return status;
+            return _context.Payments.Any(e => e.Id == id && e.UserConfigId == CompanyId);
         }
 
     }

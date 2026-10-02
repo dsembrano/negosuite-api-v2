@@ -1,165 +1,59 @@
-﻿using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using negosuite_api.Contracts.Administration;
+using negosuite_api.Contracts.Maintenance;
 using negosuite_api.Models;
-using Newtonsoft.Json;
+using negosuite_api.Services;
+using static negosuite_api.Services.AdministrationSupport;
 
-namespace negosuite_api.Controllers
+namespace negosuite_api.Controllers;
+
+[Authorize, TypeFilter(typeof(ConfigUuidFilter)), TypeFilter(typeof(AdministrationExceptionFilter))]
+[ApiController, Route("api/discount-types")]
+public class DiscountTypesController : ControllerBase
 {
-    [Authorize]
-    [TypeFilter(typeof(ConfigUuidFilter))]
-    [Route("api/discount-types")]
-    [ApiController]
-    public class DiscountTypesController : ControllerBase
+    public static bool STATUS_ACTIVE = true, STATUS_INACTIVE = false;
+    private readonly DiscountTypeService service;
+    public DiscountTypesController(DiscountTypeService service) => this.service = service;
+    private User Actor => (User)HttpContext.Items[CompanyAccessService.ActorKey];
+
+    [HttpGet]
+    public async Task<ActionResult> GetDiscountType(string criteria, [FromQuery] AdministrationListOptions options, CancellationToken ct)
     {
-        private readonly negosuiteContext _context;
+        var filter = MaintenanceServiceCriteria.Parse(criteria);
+        var company = Company(Actor); Require(filter.UserConfigId == company, "Company does not match membership.", 403);
+        return Ok(await service.ListAsync(company, filter, options, false, ct));
+    }
+    [HttpGet("{id}")]
+    public async Task<ActionResult<DiscountTypeDetailDto>> GetDiscountType(int id, CancellationToken ct)
+    { var result = await service.GetAsync(Company(Actor), id, ct); return result == null ? NotFound() : result; }
 
-        public DiscountTypesController(negosuiteContext context)
-        {
-            _context = context;
-        }
+    [HttpPost]
+    public async Task<ActionResult<DiscountTypeDetailDto>> PostDiscountType(DiscountTypeCreateRequest input, CancellationToken ct)
+    {
+        Require(input.Id == 0 && input.Deleted != true, "New record ID must be zero or omitted.");
+        var result = await service.SaveAsync(Actor, null, input, ct);
+        return CreatedAtAction(nameof(GetDiscountType), new { id = result.Id }, result);
+    }
 
-        // GET: api/DiscountTypes
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<DiscountType>>> GetDiscountType(string criteria)
-        {
-            SelectCriteria selectCriteria = JsonConvert.DeserializeObject<SelectCriteria>(criteria);
+    [HttpPut("{id}")]
+    public async Task<IActionResult> PutDiscountType(int id, DiscountTypeUpdateRequest input, CancellationToken ct)
+    {
+        Require(input.Id == id && input.Deleted != true, "Route/body IDs must match; use DELETE to remove a record.");
+        await service.SaveAsync(Actor, id, input, ct); return NoContent();
+    }
 
-            return await _context.DiscountTypes.Where(t => t.UserConfigId == selectCriteria.UserConfigId)
-                .Include(e => e.DiscountAccount)
-                .Include(t => t.TaxRate).ToListAsync();
-        }
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteDiscountType(int id, CancellationToken ct)
+    { await service.DeleteAsync(Actor, id, ct); return NoContent(); }
 
-
-        [HttpGet("{id}")]
-        public async Task<ActionResult<DiscountType>> GetDiscountType(int id)
-        {
-            var DiscountType = await _context.DiscountTypes
-                .FindAsync(id);
-
-            if (DiscountType == null)
-            {
-                return NotFound();
-            }
-
-            return DiscountType;
-        }
-
-
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutDiscountType(int id, DiscountType DiscountType)
-        {
-            if (id != DiscountType.Id)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(DiscountType).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!DiscountTypeExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return NoContent();
-        }
-
-
-        [HttpPost]
-        public async Task<ActionResult<DiscountType>> PostDiscountType(DiscountType DiscountType)
-        {
-            _context.DiscountTypes.Add(DiscountType);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction("GetDiscountType", new { id = DiscountType.Id }, DiscountType);
-        }
-
-
-        [Route("many")]
-        [HttpPost]
-        public async Task<ActionResult> PostManyDiscountType(List<DiscountType> DiscountTypes)
-        {
-
-            foreach (var e in DiscountTypes.ToList())
-            {
-                if (e.Id == 0)
-                {
-                    e.CreatedDate = DateTime.Now;
-                    _context.DiscountTypes.Add(e);
-                }
-                else
-                {
-                    if (e.Deleted == true)
-                    {
-                        var entry = await _context.DiscountTypes.FindAsync(e.Id);
-                        _context.DiscountTypes.Remove(entry);
-                    }
-                    else
-                    {
-                        e.LastUpdatedDate = DateTime.Now;
-                        _context.Entry(e).State = EntityState.Modified;
-                    }
-                }
-            };
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                throw;
-            }
-            catch (DbUpdateException ex)
-            {
-                // A foreign key constraint violation occurred
-                return Conflict("Cannot delete Tax Rate because it is currently in use.");
-            }
-
-            var list = await _context.DiscountTypes.Where(e => e.UserConfigId == DiscountTypes[0].UserConfigId)
-                .Include(e => e.DiscountAccount)
-                .Include(t => t.TaxRate).ToListAsync();
-
-            return Ok(list);
-
-        }
-
-
-        // DELETE: api/DiscountTypes/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteDiscountType(int id)
-        {
-            var DiscountType = await _context.DiscountTypes.FindAsync(id);
-            if (DiscountType == null)
-            {
-                return NotFound();
-            }
-
-            _context.DiscountTypes.Remove(DiscountType);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
-        }
-
-        private bool DiscountTypeExists(int id)
-        {
-            return _context.DiscountTypes.Any(e => e.Id == id);
-        }
+    [HttpPost("many")]
+    public async Task<ActionResult> PostManyDiscountType(List<DiscountTypeWriteRequest> input, CancellationToken ct)
+    {
+        await service.SaveManyAsync(Actor, input, ct);
+        return Ok(await service.ListAsync(Company(Actor), new MaintenanceCriteria(), new AdministrationListOptions(), false, ct));
     }
 }

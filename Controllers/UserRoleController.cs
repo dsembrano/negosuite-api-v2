@@ -1,130 +1,48 @@
-﻿using System;
-using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using negosuite_api.Contracts.Administration;
 using negosuite_api.Models;
-using Newtonsoft.Json;
+using negosuite_api.Services;
+using static negosuite_api.Services.AdministrationSupport;
 
-namespace negosuite_api.Controllers
+namespace negosuite_api.Controllers;
+
+[Authorize, TypeFilter(typeof(ConfigUuidFilter)), TypeFilter(typeof(AdministrationExceptionFilter))]
+[ApiController, Route("api/user-roles")]
+public class UserRoleController : ControllerBase
 {
-    [Authorize]
-    [TypeFilter(typeof(ConfigUuidFilter))]
-    [Route("api/user-roles")]
-    [ApiController]
-    public class UserRoleController : ControllerBase
+    private readonly UserRoleService roles;
+    public UserRoleController(UserRoleService roles) => this.roles = roles;
+    private User Actor => (User)HttpContext.Items[CompanyAccessService.ActorKey];
+
+    [HttpGet]
+    public async Task<ActionResult> GetUserRoles(string criteria, [FromQuery] AdministrationListOptions options, CancellationToken ct)
     {
-        private readonly negosuiteContext _context;
-
-        public UserRoleController(negosuiteContext context)
-        {
-            _context = context;
-        }
-
-        [HttpGet]
-        public async Task<ActionResult> GetUserRoles(string criteria)
-        {
-            SelectCriteria selectCriteria = JsonConvert.DeserializeObject<SelectCriteria>(criteria);
-
-            var result = await _context.UserRoles
-                .Where(u => u.UserConfigId == selectCriteria.UserConfigId || u.UserConfigId == null)
-                .Select(u => new
-                {
-                    u.Id,
-                    u.Name,
-                    u.Notes,
-                    u.Permission,
-                    u.IsAdmin
-                }).OrderBy(e => e.Name).ToListAsync();
-
-            return Ok(result);
-        }
-
-
-        [HttpGet("{id}")]
-        public async Task<ActionResult<UserRole>> GetUserRole(int id)
-        {
-            var userRole = await _context.UserRoles.FindAsync(id);
-
-            if (userRole == null)
-            {
-                return NotFound();
-            }
-
-            return userRole;
-
-        }
-
-
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutUserRole(int id, UserRole userRole)
-        {
-            if (id != userRole.Id)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(userRole).State = EntityState.Modified;
-
-            try
-            {
-                userRole.LastUpdatedDate = DateTime.Now;
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!UserRoleExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return NoContent();
-        }
-
-
-        [HttpPost]
-        public async Task<ActionResult<UserRole>> PostUser(UserRole userRole)
-        {
-            userRole.CreatedDate = DateTime.Now;
-
-            _context.UserRoles.Add(userRole);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction("GetUserRole", new { id = userRole.Id }, userRole);
-        }
-
-
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteUserRole(int id)
-        {
-            var useCount = await _context.Users.Where(u => u.UserRoleId == id).CountAsync();
-            if (useCount > 0)
-            {
-                return BadRequest("Unable to delete user role becuase it is currently in use.");
-            }
-
-            var userRole = await _context.UserRoles.FindAsync(id);
-            if (userRole == null)
-            {
-                return NotFound();
-            }
-
-            _context.UserRoles.Remove(userRole);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
-        }
-
-        private bool UserRoleExists(int id)
-        {
-            return _context.UserRoles.Any(e => e.Id == id);
-        }
-
+        Criteria(criteria, Company(Actor));
+        return Ok(await roles.ListAsync(Company(Actor), options, false, ct));
     }
+    [HttpGet("{id}")]
+    public async Task<ActionResult<UserRoleDetailDto>> GetUserRole(int id, CancellationToken ct)
+    {
+        var role = await roles.GetAsync(Company(Actor), id, ct);
+        return role == null ? NotFound() : role;
+    }
+    [HttpPost]
+    public async Task<ActionResult<UserRoleDetailDto>> PostUser(UserRoleCreateRequest input, CancellationToken ct)
+    {
+        Require(input.Id == 0, "New role ID must be zero or omitted.");
+        var role = await roles.SaveAsync(Actor, null, input, ct);
+        return CreatedAtAction(nameof(GetUserRole), new { id = role.Id }, role);
+    }
+    [HttpPut("{id}")]
+    public async Task<IActionResult> PutUserRole(int id, UserRoleUpdateRequest input, CancellationToken ct)
+    {
+        Require(id == input.Id, "Route and body IDs must match.");
+        await roles.SaveAsync(Actor, id, input, ct); return NoContent();
+    }
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteUserRole(int id, CancellationToken ct)
+    { await roles.DeleteAsync(Actor, id, ct); return NoContent(); }
 }

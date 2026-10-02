@@ -1,4 +1,9 @@
-﻿using System;
+using System;
+using System.Threading;
+using Microsoft.Extensions.DependencyInjection;
+using negosuite_api.Contracts.Customers;
+using negosuite_api.Contracts.Transactions;
+using negosuite_api.Services;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -18,102 +23,56 @@ namespace negosuite_api.Controllers
     public class StockIssuancesController : ControllerBase
     {
         private readonly negosuiteContext _context;
+        private readonly StockIssuanceService service;
 
-        public StockIssuancesController(negosuiteContext context)
+        [ActivatorUtilitiesConstructor]
+        public StockIssuancesController(negosuiteContext context, StockIssuanceService service)
         {
             _context = context;
+            this.service = service;
         }
 
-
-        /*
-        [HttpGet]
-        public async Task<ActionResult> GetStockIssuances(string criteria)
-        {
-            SelectCriteria selectCriteria = JsonConvert.DeserializeObject<SelectCriteria>(criteria);
-
-            var result = await _context.StockIssuances
-                .Where(e => selectCriteria.ReferenceNo != null ? e.ReferenceNo == selectCriteria.ReferenceNo : true)
-                .Where(a => a.UserConfigId == selectCriteria.UserConfigId)
-                .Where(e => selectCriteria.PeriodStart.HasValue && selectCriteria.PeriodEnd.HasValue ? e.ReferenceDate >= selectCriteria.PeriodStart && e.ReferenceDate <= selectCriteria.PeriodEnd : true)
-                .Where(e => selectCriteria != null && selectCriteria.ShowDeleted == true ? true : e.Status != GeneralJournalsController.STATUS_DELETED)
-               .Select(e => new
-               {
-                   e.Id,
-                   e.ReferenceNo,
-                   e.ReferenceDate,
-                   e.Notes,
-                   e.Status,
-                   InventoryLocationName = e.InventoryLocation.Name,
-                   StatusName = GetStatusName(e)
-               }).OrderBy(e => e.ReferenceDate).ThenBy(e => e.ReferenceNo).ToListAsync();
-
-            return Ok(result);
-        }*/
-
+        public StockIssuancesController(negosuiteContext context) : this(context, new StockIssuanceService(context)) { }
+        private int? CompanyId => HttpContext?.Items[ConfigUuidFilter.CompanyIdKey] as int?;
 
         [HttpGet]
-        public async Task<ActionResult> GetStockIssuances(string criteria)
+        public async Task<ActionResult> GetStockIssuances(string criteria, [FromQuery] int? pageNumber = null,
+            [FromQuery] int? pageSize = null, CancellationToken cancellationToken = default,
+            [FromQuery] string search = null, [FromQuery] string sortBy = null, [FromQuery] string sortDirection = null,
+            [FromQuery] short? status = null)
         {
-            SelectCriteria selectCriteria = JsonConvert.DeserializeObject<SelectCriteria>(criteria);
-
-            var userConfigId = selectCriteria.UserConfigId.ToString();
-            var periodStart = selectCriteria.PeriodStart?.ToString("yyyy-MM-dd");
-            var periodEnd = selectCriteria.PeriodEnd?.ToString("yyyy-MM-dd"); ;
-            var customerId = (selectCriteria.CustomerId != null) ? selectCriteria.CustomerId.ToString() : "";
-            var supplierId = (selectCriteria.SupplierId != null) ? selectCriteria.SupplierId.ToString() : "";
-            var referenceNo = (selectCriteria.ReferenceNo != null) ? selectCriteria.ReferenceNo.ToString() : "";
-            var arrayString = string.IsNullOrEmpty(selectCriteria.ArrayString) ? "" : selectCriteria.ArrayString;
-
-            var list = await _context.SPStockIssuances
-                .FromSqlInterpolated($"CALL GetStockIssuances({userConfigId}, {periodStart}, {periodEnd}, {customerId}, {supplierId}, {referenceNo}, {arrayString})")
-                .ToListAsync();
-
-            var result = list
-                .Select(e => new
-                {
-                    e.Id,
-                    e.ReferenceNo,
-                    e.ReferenceDate,
-                    e.CustomerId,
-                    e.CustomerName,
-                    e.Notes,
-                    e.InventoryLocationName,
-                    e.ResponsibilityCenterEntry,
-                    e.Status,
-                    StatusName = GetStatusName(e)
-                }).OrderBy(e => e.ReferenceDate).ThenBy(e => e.ReferenceNo).ToList();
-
-            return Ok(result);
+            if (!CompanyId.HasValue) return Unauthorized();
+            if (!CustomerPagination.IsValid(pageNumber, pageSize)) return BadRequest("Supply both pageNumber (1 or greater) and pageSize (1 to 200), within the supported offset range.");
+            if (!StockIssuanceQuery.IsValidSort(sortBy, sortDirection)) return BadRequest("Unsupported sortBy or sortDirection. Use a supported column and asc or desc.");
+            if (status.HasValue && status is not (-1 or 0 or 1)) return BadRequest("status must be -1 (deleted), 0 (draft) or 1 (posted).");
+            TransactionListCriteria filter;
+            try { filter = string.IsNullOrWhiteSpace(criteria) ? null : JsonConvert.DeserializeObject<TransactionListCriteria>(criteria); }
+            catch (JsonException) { return BadRequest("Invalid criteria JSON."); }
+            if (filter?.UserConfigId == null) return BadRequest("criteria.userConfigId is required.");
+            if (filter.UserConfigId != CompanyId) return Forbid();
+            if (!SalesInvoiceQuery.TryParseCenters(filter.ArrayString, out var centers)) return BadRequest("criteria.arrayString must contain comma-separated positive responsibility center IDs.");
+            return Ok(await service.ListAsync(CompanyId.Value, filter, centers, pageNumber, pageSize, search, sortBy, sortDirection, status, cancellationToken));
         }
-
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<StockIssuance>> GetStockIssuance(int id)
+        public async Task<ActionResult<StockIssuanceDetailDto>> GetStockIssuance(int id, CancellationToken cancellationToken = default)
         {
-            var result = await _context.StockIssuances.Where(e => e.Id == id)
-                .Include(e => e.StockIssuanceDetails).ThenInclude(e => e.Item)
-                .Include(e => e.InventoryLocation)
-                .Include(e => e.JournalEntries).ThenInclude(e => e.Account).ThenInclude(a => a.Category)
-                .Include(e => e.JournalEntries).ThenInclude(e => e.Customer)
-                .Include(e => e.JournalEntries).ThenInclude(e => e.Supplier)
-                .Include(e => e.Customer).Include(e => e.Supplier)
-                .SingleOrDefaultAsync();
-
-            if (result == null)
-            {
-                return NotFound();
-            }
-            return result;
+            if (!CompanyId.HasValue) return Unauthorized();
+            var result = await service.GetAsync(CompanyId.Value, id, cancellationToken);
+            return result == null ? NotFound() : result;
         }
-
-
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutStockIssuance(int id, StockIssuance stockIssuance)
+        public async Task<IActionResult> PutStockIssuance(int id, StockIssuanceUpdateRequest request)
         {
-            if (id != stockIssuance.Id)
-            {
-                return BadRequest();
-            }
+            var stockIssuance = TransactionWriteMapping.Map(request);
+            if (!CompanyId.HasValue) return Unauthorized();
+            if (stockIssuance.UserConfigId != CompanyId) return Forbid();
+            if (id != stockIssuance.Id) return BadRequest();
+            if (!await _context.StockIssuances.AnyAsync(e => e.Id == id && e.UserConfigId == CompanyId.Value)) return NotFound();
+            var validationError = await service.ValidateWriteAsync(CompanyId.Value, id, stockIssuance, HttpContext.RequestAborted);
+            if (validationError != null) return BadRequest(validationError);
+            foreach (var line in stockIssuance.StockIssuanceDetails) line.StockIssuanceId = id;
+            foreach (var entry in stockIssuance.JournalEntries) _context.Entry(entry).Property("StockIssuanceId").CurrentValue = id;
 
             var j = await _context.StockIssuances.FirstOrDefaultAsync(e => e.ReferenceNo == stockIssuance.ReferenceNo && e.UserConfigId == stockIssuance.UserConfigId && e.Id != id);
             if (j != null)
@@ -197,8 +156,14 @@ namespace negosuite_api.Controllers
 
 
         [HttpPost]
-        public async Task<ActionResult<StockIssuance>> PostStockIssuance(StockIssuance stockIssuance)
+        public async Task<ActionResult<StockIssuanceDetailDto>> PostStockIssuance(StockIssuanceCreateRequest request)
         {
+            var stockIssuance = TransactionWriteMapping.Map(request);
+            if (!CompanyId.HasValue) return Unauthorized();
+            if (stockIssuance.UserConfigId != CompanyId) return Forbid();
+            if (stockIssuance.Id != 0) return BadRequest("New transaction ID must be zero or omitted.");
+            var validationError = await service.ValidateWriteAsync(CompanyId.Value, null, stockIssuance, HttpContext.RequestAborted);
+            if (validationError != null) return BadRequest(validationError);
             var j = await _context.StockIssuances.FirstOrDefaultAsync(e => e.ReferenceNo == stockIssuance.ReferenceNo && e.UserConfigId == stockIssuance.UserConfigId);
             if (j != null)
             {
@@ -223,14 +188,15 @@ namespace negosuite_api.Controllers
             _context.StockIssuances.Add(stockIssuance);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetStockIssuance", new { id = stockIssuance.Id }, stockIssuance);
+            return CreatedAtAction("GetStockIssuance", new { id = stockIssuance.Id }, new TransactionResponseMapping().Map(stockIssuance));
         }
 
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteStockIssuance(int id)
         {
-            var StockIssuance = await _context.StockIssuances.Where(e => e.Id == id)
+            if (!CompanyId.HasValue) return Unauthorized();
+            var StockIssuance = await _context.StockIssuances.Where(e => e.Id == id && e.UserConfigId == CompanyId.Value)
                 .Include(e => e.JournalEntries)
                 .Include(e => e.StockIssuanceDetails)
                 .SingleOrDefaultAsync();
@@ -274,27 +240,9 @@ namespace negosuite_api.Controllers
 
         private bool StockIssuanceExists(int id)
         {
-            return _context.StockIssuances.Any(e => e.Id == id);
+            return _context.StockIssuances.Any(e => e.Id == id && e.UserConfigId == CompanyId.Value);
         }
 
-
-        private static string GetStatusName(SPStockIssuance stockIssuance)
-        {
-            string status = "";
-            switch (stockIssuance.Status)
-            {
-                case -1:
-                    status = "Deleted";
-                    break;
-                case 0:
-                    status = "Draft";
-                    break;
-                case 1:
-                    status = "Posted";
-                    break;
-            }
-            return status;
-        }
 
     }
 }

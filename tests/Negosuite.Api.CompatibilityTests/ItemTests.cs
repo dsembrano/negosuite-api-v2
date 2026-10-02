@@ -62,7 +62,7 @@ public class ItemTests
             var inactive = new Item { UserConfigId = company.Id, Name = "Inactive", Status = false, Unit = "pc" };
             var foreign = new Item { UserConfigId = other.Id, Name = "Foreign", Status = true, Unit = "foreign-unit" };
             db.Items.AddRange(first, second, inactive, foreign); await db.SaveChangesAsync();
-            host.Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", ApiHost.Token());
+            host.Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", await ApiHost.MemberTokenAsync(db, company.Id));
             host.Client.DefaultRequestHeaders.Add("configUuid", company.Uuid);
             string Url(object criteria) => "/api/items?criteria=" + Uri.EscapeDataString(JsonSerializer.Serialize(criteria));
             var url = Url(new { userConfigId = company.Id });
@@ -74,6 +74,11 @@ public class ItemTests
             Assert.Single((await host.Client.GetFromJsonAsync<JsonElement>(Url(new { userConfigId = company.Id, itemCategoryId = category.Id }))).EnumerateArray());
             Assert.Equal(3, (await host.Client.GetFromJsonAsync<JsonElement>(Url(new { userConfigId = company.Id, showInactive = true }))).GetArrayLength());
             Assert.Single((await host.Client.GetFromJsonAsync<JsonElement>(url + "&toPurchase=true")).EnumerateArray());
+            var inventoryPage = await host.Client.GetFromJsonAsync<JsonElement>(url + "&trackInventory=true&pageNumber=1&pageSize=1&sortBy=rate&sortDirection=asc");
+            Assert.Equal(1, inventoryPage.GetProperty("totalCount").GetInt32());
+            Assert.Equal(first.Id, inventoryPage.GetProperty("items")[0].GetProperty("id").GetInt32());
+            Assert.Empty((await host.Client.GetFromJsonAsync<JsonElement>(url + "&trackInventory=true&pageNumber=2&pageSize=1")).GetProperty("items").EnumerateArray());
+            Assert.Empty((await host.Client.GetFromJsonAsync<JsonElement>(url + "&trackInventory=true&search=service")).EnumerateArray());
             foreach (var term in new[] { "SKU-%_&", "Hardware", "Goods", "pc" })
                 Assert.Single((await host.Client.GetFromJsonAsync<JsonElement>(url + "&search=" + Uri.EscapeDataString(term))).EnumerateArray());
             var page = await host.Client.GetFromJsonAsync<JsonElement>(url + "&pageNumber=2&pageSize=1&sortBy=rate&sortDirection=desc");

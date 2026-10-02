@@ -99,7 +99,7 @@ public class MySqlCompatibilityTests
             // Local migration testing can keep an older web login active without bypassing authentication or company validation.
             using (var parallelHost = new ApiHost(builder.ConnectionString, enforceSingleWebSession: false))
             {
-                parallelHost.Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", ApiHost.Token());
+                parallelHost.Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", ApiHost.Token(userId: user.Id));
                 parallelHost.Client.DefaultRequestHeaders.Add("configUuid", config.Uuid);
                 parallelHost.Client.DefaultRequestHeaders.Add("X-UserLog", JsonSerializer.Serialize(new { Id = logId, UserId = user.Id }));
                 Assert.Equal(HttpStatusCode.OK, (await parallelHost.Client.GetAsync("/__compatibility/config")).StatusCode);

@@ -1,3 +1,4 @@
+param([string]$Filter)
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path $PSScriptRoot -Parent
 $sandbox = Join-Path $repo 'bin/phase1-mysql'
@@ -25,7 +26,9 @@ try {
     $passwordLine = Get-Content "$sandbox/client.cnf" | Where-Object { $_ -like 'password=*' }
     $password = $passwordLine.Substring('password='.Length)
     $env:NEGOSUITE_PHASE3_MYSQL = "server=127.0.0.1;port=33316;user=root;password=$password;SslMode=Required"
-    dotnet test tests/Negosuite.Api.CompatibilityTests/Negosuite.Api.CompatibilityTests.csproj -c Release --no-restore --logger 'trx;LogFileName=phase3-mysql.trx' --results-directory bin/phase3-verification
+    $testArgs = @('test', 'tests/Negosuite.Api.CompatibilityTests/Negosuite.Api.CompatibilityTests.csproj', '-c', 'Release', '--no-restore', '--logger', 'trx;LogFileName=phase3-mysql.trx', '--results-directory', 'bin/phase3-verification')
+    if ($Filter) { $testArgs += @('--filter', $Filter) }
+    & dotnet @testArgs
     if ($LASTEXITCODE -ne 0) { throw 'Phase 3 tests failed. See test results.' }
 } finally {
     $env:NEGOSUITE_PHASE3_MYSQL = $oldConnection

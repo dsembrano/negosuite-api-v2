@@ -63,7 +63,7 @@ public class CustomerTests
             outsider.CustomerContacts.First().PhoneNo = "0917-123";
             db.Customers.AddRange(first, second, inactive, outsider);
             await db.SaveChangesAsync();
-            host.Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", ApiHost.Token());
+            host.Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", await ApiHost.MemberTokenAsync(db, company.Id));
             host.Client.DefaultRequestHeaders.Add("configUuid", company.Uuid);
             string ListUrl(int tenant, bool showInactive = false) => "/api/customers?criteria=" + Uri.EscapeDataString(JsonSerializer.Serialize(new { userConfigId = tenant, showInactive }));
             var url = ListUrl(company.Id);

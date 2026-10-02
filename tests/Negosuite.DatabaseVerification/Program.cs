@@ -223,7 +223,9 @@ if (selectedConfig != null && report.ContainsKey("ReadOnlySample"))
     }
     // Fixed GET allowlist; creation/posting/view-generation routines are never invoked.
     await ReportCheck("sales", null, new SalesReportsController(db).GetSalesTransactionsRC);
-    await ReportCheck("purchases", null, new BillsController(db).GetBills);
+    var billsController = new BillsController(db) { ControllerContext = new ControllerContext { HttpContext = new Microsoft.AspNetCore.Http.DefaultHttpContext() } };
+    billsController.HttpContext.Items["Negosuite.ValidatedCompanyId"] = selectedConfig.Id;
+    await ReportCheck("purchases", null, criteria => billsController.GetBills(criteria));
     await ReportCheck("receivables", ar, new ReceivableReportsController(db).GetCustomerBalancesRC);
     await ReportCheck("payables", ap, new PayableReportsController(db).GetCustomerBalancesRC);
     await ReportCheck("inventory", null, new InventoryReportsController(db).GetInventoryTransactions);

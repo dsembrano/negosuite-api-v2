@@ -33,6 +33,18 @@ Items API changes: [refactoring, compatibility, filtering, sorting, and paginati
 
 Item Categories API changes: [refactoring, compatibility, filtering, sorting, and pagination](docs/item-categories-refactoring.md).
 
+Accounts and Account Categories: [DTOs, company scope, hierarchy checks, sorting, pagination, and preferences](docs/accounts-refactoring.md).
+
+Users, roles and company settings: [administration DTOs, membership validation, protected onboarding, and compatibility](docs/administration-refactoring.md).
+
+Tax Rates, Discount Types, Responsibility Centers/Types and Inventory Locations: [DTOs, optional pagination, sorting, atomic bulk saves, and reference validation](docs/maintenance-refactoring.md).
+
+Shared lookup and navigation APIs: [Payment Modes/Terms, Currencies, Countries, Cities, Industries, and Navigation Items](docs/reference-data-refactoring.md).
+
 Sales Invoices API changes: [compatibility, SQL filtering, sorting, pagination, and transaction checks](docs/sales-invoices-refactoring.md).
 
 Sales Receipts and Invoice Payments: [compatibility, SQL pagination/search/sorting, and transaction checks](docs/sales-collections-refactoring.md).
+
+Bills and Payments: [compatibility, SQL pagination/search/sorting, inventory and payment checks](docs/bills-payments-refactoring.md).
+
+Remaining active transactions: [controller rollout, DTOs, paging, journal lookups and verification](docs/transactions-refactoring.md).

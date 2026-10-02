@@ -1,129 +1,82 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using MySql.Data.MySqlClient;
+using negosuite_api.Contracts.Customers;
+using negosuite_api.Contracts.Accounts;
 using negosuite_api.Models;
+using negosuite_api.Services;
 using Newtonsoft.Json;
 
-namespace negosuite_api.Controllers
+namespace negosuite_api.Controllers;
+
+[Authorize, TypeFilter(typeof(ConfigUuidFilter)), Route("api/account-categories"), ApiController]
+public class AccountCategoriesController : ControllerBase
 {
-    [Authorize]
-    [TypeFilter(typeof(ConfigUuidFilter))]
-    [Route("api/account-categories")]
-    [ApiController]
-    public class AccountCategoriesController : ControllerBase
+    private readonly AccountCategoryService service;
+    [ActivatorUtilitiesConstructor]
+    public AccountCategoriesController(AccountCategoryService service) => this.service = service;
+    public AccountCategoriesController(negosuiteContext context) => service = new AccountCategoryService(context);
+    private int? CompanyId => HttpContext?.Items[ConfigUuidFilter.CompanyIdKey] as int?;
+
+    [HttpGet]
+    public async Task<ActionResult> GetAccountCategories(string criteria, [FromQuery] int? pageNumber = null,
+        [FromQuery] int? pageSize = null, CancellationToken cancellationToken = default,
+        [FromQuery] string search = null, [FromQuery] string sortBy = null, [FromQuery] string sortDirection = null)
     {
-        private readonly negosuiteContext _context;
+        if (!CompanyId.HasValue) return Unauthorized();
+        if (!CustomerPagination.IsValid(pageNumber, pageSize)) return BadRequest("Supply both pageNumber (1 or greater) and pageSize (1 to 200), within the supported offset range.");
+        if (!AccountCategoryQuery.IsValidSort(sortBy, sortDirection)) return BadRequest("Unsupported sortBy or sortDirection.");
+        AccountListCriteria filter;
+        try { filter = string.IsNullOrWhiteSpace(criteria) ? null : JsonConvert.DeserializeObject<AccountListCriteria>(criteria); }
+        catch (JsonException) { return BadRequest("Invalid account category criteria JSON."); }
+        if (filter?.UserConfigId == null) return BadRequest("criteria.userConfigId is required.");
+        if (filter.UserConfigId != CompanyId) return Forbid();
+        return Ok(await service.ListAsync(CompanyId.Value, pageNumber, pageSize, search, sortBy, sortDirection, cancellationToken));
+    }
 
-        public AccountCategoriesController(negosuiteContext context)
+    [HttpGet("{id}")]
+    public async Task<ActionResult<AccountCategoryDetailDto>> GetAccountCategory(int id, CancellationToken cancellationToken = default)
+    {
+        if (!CompanyId.HasValue) return Unauthorized();
+        var result = await service.GetAsync(CompanyId.Value, id, cancellationToken);
+        return result == null ? NotFound() : result;
+    }
+
+    [HttpPost]
+    public async Task<ActionResult<AccountCategoryDetailDto>> PostAccountCategory(AccountCategoryCreateRequest input, CancellationToken cancellationToken = default)
+    {
+        if (!CompanyId.HasValue) return Unauthorized();
+        if (input == null || input.Id != 0) return BadRequest("New account category ID must be zero or omitted.");
+        if (input.UserConfigId != CompanyId) return Forbid();
+        var result = await service.SaveAsync(CompanyId.Value, null, input, cancellationToken);
+        if (result.Error != null) return BadRequest(result.Error);
+        return CreatedAtAction(nameof(GetAccountCategory), new { id = result.Item.Id }, result.Item);
+    }
+
+    [HttpPut("{id}")]
+    public async Task<IActionResult> PutAccountCategory(int id, AccountCategoryUpdateRequest input, CancellationToken cancellationToken = default)
+    {
+        if (!CompanyId.HasValue) return Unauthorized();
+        if (input == null || id != input.Id) return BadRequest();
+        if (input.UserConfigId != CompanyId) return Forbid();
+        var result = await service.SaveAsync(CompanyId.Value, id, input, cancellationToken);
+        if (result.Missing) return NotFound();
+        return result.Error != null ? BadRequest(result.Error) : NoContent();
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteAccountCategory(int id, CancellationToken cancellationToken = default)
+    {
+        if (!CompanyId.HasValue) return Unauthorized();
+        try { if (!await service.DeleteAsync(CompanyId.Value, id, cancellationToken)) return NotFound(); }
+        catch (DbUpdateException ex) when (ex.InnerException is MySqlException { Number: 1451 })
         {
-            _context = context;
+            return BadRequest("Unable to delete account category. It is probably used by another record.");
         }
-
-        // GET: api/AccountCategories
-        [HttpGet]
-        public async Task<ActionResult> GetAccountCategories(string criteria)
-        {
-            SelectCriteria selectCriteria = !string.IsNullOrEmpty(criteria) ? JsonConvert.DeserializeObject<SelectCriteria>(criteria) : null;
-
-            var result = await _context.AccountCategories.OrderBy(a => a.OrderNo)
-                .Where(a => a.UserConfigId == selectCriteria.UserConfigId)
-                .Select(a => new
-                {
-                    a.Id,
-                    a.Name,
-                    a.Type,
-                    a.AccountCodePrefix,
-                    a.OrderNo,
-                    AccountCount = _context.Accounts.Where(c => c.CategoryId == a.Id).Count(),
-                }).OrderBy(e => e.OrderNo).ToListAsync();
-
-            return Ok(result);
-        }
-
-        // GET: api/AccountCategories/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<AccountCategory>> GetAccountCategory(int id)
-        {
-            var accountCategory = await _context.AccountCategories.FindAsync(id);
-
-            if (accountCategory == null)
-            {
-                return NotFound();
-            }
-
-            return accountCategory;
-
-        }
-
-        // PUT: api/AccountCategories/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutAccountCategory(int id, AccountCategory accountCategory)
-        {
-            if (id != accountCategory.Id)
-            {
-                return BadRequest();
-            }
-
-            accountCategory.LastUpdatedDate = DateTime.Now;
-            _context.Entry(accountCategory).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!AccountCategoryExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return NoContent();
-        }
-
-        // POST: api/AccountCategories
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
-        public async Task<ActionResult<AccountCategory>> PostAccountCategory(AccountCategory accountCategory)
-        {
-            accountCategory.CreatedDate = DateTime.Now;
-
-            _context.AccountCategories.Add(accountCategory);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction("GetAccountCategory", new { id = accountCategory.Id }, accountCategory);
-        }
-
-        // DELETE: api/AccountCategories/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteAccountCategory(int id)
-        {
-            var accountCategory = await _context.AccountCategories.FindAsync(id);
-            if (accountCategory == null)
-            {
-                return NotFound();
-            }
-
-            _context.AccountCategories.Remove(accountCategory);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
-        }
-
-        private bool AccountCategoryExists(int id)
-        {
-            return _context.AccountCategories.Any(e => e.Id == id);
-        }
+        return NoContent();
     }
 }

@@ -29,11 +29,11 @@ The new **query parameter** `status` selects `-1` (deleted), `0` (draft) or `1` 
 
 ## Detail and transaction handling
 
-Detail reads use no-tracking identity resolution and split queries to avoid multiplying invoice details, journal entries and customer contacts/addresses in a single large join. The detail entity/JSON graph is retained for transaction compatibility. Split queries and separate count/page queries may see intervening concurrent writes.
+Detail reads use no-tracking identity resolution and split queries to avoid multiplying invoice details, journal entries and customer contacts/addresses in a single large join. Dedicated detail DTOs now preserve the JSON graph. Split queries and separate count/page queries may see intervening concurrent writes.
 
 All invoice routes now restrict the parent invoice to the validated company. Cross-company or missing IDs return 404 on detail/update/delete. Supplied body-company mismatches return 403. Write validation checks customer/supplier ownership, payment-term existence, inventory-location ownership, item/account ownership and that submitted existing detail/journal IDs belong to this invoice. Duplicate child IDs and null collections/entries are rejected. Update assigns child invoice IDs from the route.
 
-Existing invoice-number generation, duplicate-number conflicts, journal rounding, nested deletion flags, invoice totals/balances, timestamps and payment-applied deletion protection are retained. This change does not redesign transaction write DTOs, accounting calculations, audit attribution or concurrent posting/sequence allocation. In particular, the existing sequence allocation transaction remains separate from invoice saving. Client transaction acceptance should still cover normal posting and payment workflows.
+Existing invoice-number generation, duplicate-number conflicts, journal rounding, nested deletion flags, invoice totals/balances, timestamps and payment-applied deletion protection are retained. The [remaining transaction rollout](transactions-refactoring.md) adds create/update DTOs and ignores nested master objects on writes. Accounting calculations, audit attribution and concurrent posting/sequence allocation are unchanged. The existing sequence allocation transaction remains separate from invoice saving. Client transaction acceptance should still cover normal posting and payment workflows.
 
 ## Page preferences
 

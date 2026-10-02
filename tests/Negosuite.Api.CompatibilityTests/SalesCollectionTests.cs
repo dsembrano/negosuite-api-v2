@@ -221,7 +221,7 @@ public class SalesCollectionTests
                 f.Item = new Item { UserConfigId = f.Company.Id, Name = "Test item", Status = true }; f.Mode = new PaymentMode { Name = "Cash", IsActive = true };
                 f.Db.Customers.AddRange(f.Customer, f.ForeignCustomer); f.Db.Accounts.AddRange(f.Account, f.ForeignAccount); f.Db.Items.Add(f.Item); f.Db.PaymentModes.Add(f.Mode); await f.Db.SaveChangesAsync();
                 f.Company.ARTradeAccountId = f.Account.Id; await f.Db.SaveChangesAsync();
-                f.Host.Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", ApiHost.Token()); f.Host.Client.DefaultRequestHeaders.Add("configUuid", f.Company.Uuid);
+                f.Host.Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", await ApiHost.MemberTokenAsync(f.Db, f.Company.Id)); f.Host.Client.DefaultRequestHeaders.Add("configUuid", f.Company.Uuid);
                 return f;
             }
             catch { await f.DisposeAsync(); throw; }

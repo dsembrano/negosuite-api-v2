@@ -38,7 +38,7 @@ Unpaginated lists use one projection query. Paginated lists use count plus a bou
 
 ## Detail and transaction compatibility
 
-Detail reads use no-tracking identity resolution and split queries to avoid multiplication of detail/journal/contact rows. The existing entity response graphs and transaction request bodies remain intact. Split queries can observe concurrent changes between reads.
+Detail reads use no-tracking identity resolution and split queries to avoid multiplication of detail/journal/contact rows. The [remaining transaction rollout](transactions-refactoring.md) now uses dedicated detail/create/update DTOs, preserving scalar fields and response JSON while ignoring nested master objects on writes. Split queries can observe concurrent changes between reads.
 
 Every parent operation is company-scoped. Cross-company/missing detail, update and delete IDs return 404; supplied company mismatch returns 403. Write validation rejects invalid customer/deposit-account/item references, null collections/entries, duplicate child IDs and attempts to update another transaction's detail/journal entries. Payment modes remain global lookups. Receipt tax/location references and journal customer/supplier references are also checked. Child transaction IDs are assigned from the update route.
 

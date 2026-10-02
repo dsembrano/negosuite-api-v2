@@ -119,7 +119,7 @@ namespace negosuite_api.Controllers
 
             var baseCurrency = await _context.Currencies.Where(c => c.IsBase).FirstOrDefaultAsync();
             var user = await _context.Users
-                .Where(u => u.Id == userLog.UserId)
+                .Where(u => u.Id == userLog.UserId && u.Status == STATUS_ACTIVE)
                 .Select(u => new
                 {
                     u.Id,

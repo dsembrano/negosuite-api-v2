@@ -16,6 +16,12 @@ Items support: GET/PUT api/me/page-preferences/items uses Item permission 3130 a
 
 Item Categories support: GET/PUT `api/me/page-preferences/item-categories` uses Item Category permission `3135` and the existing preference table/version contract. The optional column is `status`. Mandatory `name` and unknown keys are ignored. See [Item Categories API refactoring](item-categories-refactoring.md).
 
+Accounts and Account Categories: GET/PUT `api/me/page-preferences/accounts` uses module `3210`; `api/me/page-preferences/account-categories` uses module `3220`. Both keep `name` mandatory and use the existing table and version contract. See [Accounts and Account Categories](accounts-refactoring.md) for optional columns.
+
 Sales Invoices support: GET/PUT `api/me/page-preferences/sales-invoices` uses Sales Invoice permission `4110` and the existing preference table/version contract. Invoice number is mandatory; optional columns include invoiceDate, dueDate, purchaseOrderNo, customerName, customerTIN, billing/shipping address/contact fields, amount, balance, paymentTermName, notes and statusName. See [Sales Invoices API refactoring](sales-invoices-refactoring.md).
 
 Sales Receipts and Invoice Payments: GET/PUT `api/me/page-preferences/sales-receipts` uses module `4120`; `api/me/page-preferences/sales-invoice-payments` uses module `4125`. Mandatory receiptNo/referenceNo are ignored. Optional columns follow each module's fixed list columns, including amount, balance, paymentModeName and statusName. See [Sales collections refactoring](sales-collections-refactoring.md).
+
+Bills and Payments: GET/PUT `api/me/page-preferences/bills` uses module `4210`; `api/me/page-preferences/payments` uses module `4240`. Mandatory billNo/referenceNo are ignored. Payment customer visibility retains the legacy key `customerrName`. See [Bills and payments refactoring](bills-payments-refactoring.md).
+
+Remaining transaction pages: `general-journals` (`4310`), `receiving-reports` (`4405`), `inventory-adjustments` (`4410`), `stock-transfers` (`4420`) and `stock-issuances` (`4430`) use the same GET/PUT route and version contract. Mandatory `referenceNo`, raw numeric status and responsibility-center JSON are excluded from optional column overrides. See [transaction controller rollout](transactions-refactoring.md).

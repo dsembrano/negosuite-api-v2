@@ -48,7 +48,7 @@ public class SupplierTests
             outsider.SupplierAddresses.Add(new SupplierAddress { CityMunicipalityId = city.Id, AddressLine1 = "Foreign" });
             db.Suppliers.AddRange(first, second, inactive, outsider);
             await db.SaveChangesAsync();
-            host.Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", ApiHost.Token());
+            host.Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", await ApiHost.MemberTokenAsync(db, company.Id));
             host.Client.DefaultRequestHeaders.Add("configUuid", company.Uuid);
             string ListUrl(int tenant, bool showInactive = false) => "/api/suppliers?criteria=" + Uri.EscapeDataString(JsonSerializer.Serialize(new { userConfigId = tenant, showInactive }));
             var url = ListUrl(company.Id);

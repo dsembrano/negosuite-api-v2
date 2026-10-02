@@ -1,4 +1,9 @@
-﻿using System;
+using System;
+using System.Threading;
+using Microsoft.Extensions.DependencyInjection;
+using negosuite_api.Contracts.Customers;
+using negosuite_api.Contracts.Transactions;
+using negosuite_api.Services;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -23,108 +28,55 @@ namespace negosuite_api.Controllers
         public static short STATUS_DELETED = -1;
 
         private readonly negosuiteContext _context;
+        private readonly GeneralJournalService service;
 
-        public GeneralJournalsController(negosuiteContext context)
+        [ActivatorUtilitiesConstructor]
+        public GeneralJournalsController(negosuiteContext context, GeneralJournalService service)
         {
             _context = context;
+            this.service = service;
         }
 
-        // GET: api/GeneralJournals
-        /*
-        [HttpGet]
-        public async Task<ActionResult> GetGeneralJournals(string criteria)
-        {
-            var serilizerSettings = new JsonSerializerSettings
-            {
-                DateTimeZoneHandling = DateTimeZoneHandling.Local
-            };
-            SelectCriteria selectCriteria = JsonConvert.DeserializeObject<SelectCriteria>(criteria, serilizerSettings);
-
-            var result = await _context.GeneralJournals
-                .Where(e => selectCriteria.ReferenceNo != null ? e.ReferenceNo == selectCriteria.ReferenceNo : true)
-                .Where(a => a.UserConfigId == selectCriteria.UserConfigId)
-                .Where(e => selectCriteria.PeriodStart.HasValue && selectCriteria.PeriodEnd.HasValue ? e.ReferenceDate >= selectCriteria.PeriodStart && e.ReferenceDate <= selectCriteria.PeriodEnd : true)
-                .Where(c => selectCriteria != null && selectCriteria.ShowDeleted == true ? true : c.Status != STATUS_DELETED )
-                .Select(c => new
-                {
-                    c.Id,
-                    c.ReferenceNo,
-                    ReferenceDate = c.ReferenceDate,
-                    c.Status,
-                    StatusName = c.Status == STATUS_POSTED ? "Posted" : (c.Status == STATUS_DELETED ? "Deleted" : "Draft"),
-                    c.Notes
-                }).OrderBy(e => e.ReferenceDate).ThenBy(e => e.ReferenceNo).ToListAsync();
-
-            return Ok(result);
-        }*/
-
+        public GeneralJournalsController(negosuiteContext context) : this(context, new GeneralJournalService(context)) { }
+        private int? CompanyId => HttpContext?.Items[ConfigUuidFilter.CompanyIdKey] as int?;
 
         [HttpGet]
-        public async Task<ActionResult> GetGeneralJournals(string criteria)
+        public async Task<ActionResult> GetGeneralJournals(string criteria, [FromQuery] int? pageNumber = null,
+            [FromQuery] int? pageSize = null, CancellationToken cancellationToken = default,
+            [FromQuery] string search = null, [FromQuery] string sortBy = null, [FromQuery] string sortDirection = null,
+            [FromQuery] short? status = null)
         {
-            SelectCriteria selectCriteria = JsonConvert.DeserializeObject<SelectCriteria>(criteria);
-
-            var userConfigId = selectCriteria.UserConfigId.ToString();
-            var periodStart = selectCriteria.PeriodStart?.ToString("yyyy-MM-dd");
-            var periodEnd = selectCriteria.PeriodEnd?.ToString("yyyy-MM-dd"); ;
-            var referenceNo = (selectCriteria.ReferenceNo != null) ? selectCriteria.ReferenceNo.ToString() : "";
-            var arrayString = string.IsNullOrEmpty(selectCriteria.ArrayString) ? "" : selectCriteria.ArrayString;
-
-            var list = await _context.SPGeneralJournals
-                .FromSqlInterpolated($"CALL GetGeneralJournals({userConfigId}, {periodStart}, {periodEnd}, {referenceNo}, {arrayString})")
-                .ToListAsync();
-
-            var result = list
-                .Where(c => selectCriteria != null && selectCriteria.ShowDeleted == true ? true : c.Status != STATUS_DELETED)
-                .Select(e => new
-                {
-                    e.Id,
-                    e.ReferenceNo,
-                    e.ReferenceDate,
-                    e.Notes,
-                    e.ResponsibilityCenterEntry,
-                    e.Status,
-                    StatusName = e.Status == STATUS_POSTED ? "Posted" : (e.Status == STATUS_DELETED ? "Deleted" : "Draft"),
-                }).OrderBy(e => e.ReferenceDate).ThenBy(e => e.ReferenceNo).ToList();
-
-            return Ok(result);
+            if (!CompanyId.HasValue) return Unauthorized();
+            if (!CustomerPagination.IsValid(pageNumber, pageSize)) return BadRequest("Supply both pageNumber (1 or greater) and pageSize (1 to 200), within the supported offset range.");
+            if (!GeneralJournalQuery.IsValidSort(sortBy, sortDirection)) return BadRequest("Unsupported sortBy or sortDirection. Use a supported column and asc or desc.");
+            if (status.HasValue && status is not (-1 or 0 or 1)) return BadRequest("status must be -1 (deleted), 0 (draft) or 1 (posted).");
+            TransactionListCriteria filter;
+            try { filter = string.IsNullOrWhiteSpace(criteria) ? null : JsonConvert.DeserializeObject<TransactionListCriteria>(criteria); }
+            catch (JsonException) { return BadRequest("Invalid criteria JSON."); }
+            if (filter?.UserConfigId == null) return BadRequest("criteria.userConfigId is required.");
+            if (filter.UserConfigId != CompanyId) return Forbid();
+            if (!SalesInvoiceQuery.TryParseCenters(filter.ArrayString, out var centers)) return BadRequest("criteria.arrayString must contain comma-separated positive responsibility center IDs.");
+            return Ok(await service.ListAsync(CompanyId.Value, filter, centers, pageNumber, pageSize, search, sortBy, sortDirection, status, cancellationToken));
         }
 
-        // GET: api/GeneralJournals/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<GeneralJournal>> GetGeneralJournal(int id)
+        public async Task<ActionResult<GeneralJournalDetailDto>> GetGeneralJournal(int id, CancellationToken cancellationToken = default)
         {
-            var generalJournal = await _context.GeneralJournals.Where(j => j.Id == id)
-                .Include(j => j.JournalEntries).ThenInclude(j => j.Account).ThenInclude(a => a.Category)
-                .Include(j => j.JournalEntries).ThenInclude(j => j.Customer)
-                .Include(j => j.JournalEntries).ThenInclude(j => j.Supplier)
-                .Include(j => j.JournalEntries).ThenInclude(j => j.TaxRate)
-                .Include(j => j.JournalEntries).ThenInclude(j => j.PaymentToJournalEntry)
-                .SingleOrDefaultAsync();
-
-            // Remove deleted entries unles main status is deleted
-            if (generalJournal.Status != GeneralJournalsController.STATUS_DELETED)
-            {
-                generalJournal.JournalEntries = generalJournal.JournalEntries.Where(j => j.Status != STATUS_DELETED).ToList();
-            }
-
-            if (generalJournal == null)
-            {
-                return NotFound();
-            }
-
-            return generalJournal;
+            if (!CompanyId.HasValue) return Unauthorized();
+            var result = await service.GetAsync(CompanyId.Value, id, cancellationToken);
+            return result == null ? NotFound() : result;
         }
-
-        // PUT: api/GeneralJournals/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutGeneralJournal(int id, GeneralJournal generalJournal)
+        public async Task<IActionResult> PutGeneralJournal(int id, GeneralJournalUpdateRequest request)
         {
-            if (id != generalJournal.Id)
-            {
-                return BadRequest();
-            }
+            var generalJournal = TransactionWriteMapping.Map(request);
+            if (!CompanyId.HasValue) return Unauthorized();
+            if (generalJournal.UserConfigId != CompanyId) return Forbid();
+            if (id != generalJournal.Id) return BadRequest();
+            if (!await _context.GeneralJournals.AnyAsync(e => e.Id == id && e.UserConfigId == CompanyId.Value)) return NotFound();
+            var validationError = await service.ValidateWriteAsync(CompanyId.Value, id, generalJournal, HttpContext.RequestAborted);
+            if (validationError != null) return BadRequest(validationError);
+            foreach (var entry in generalJournal.JournalEntries) entry.GeneralJournalId = id;
 
             var j = await _context.GeneralJournals.FirstOrDefaultAsync(e => e.ReferenceNo == generalJournal.ReferenceNo && e.UserConfigId == generalJournal.UserConfigId && e.Id != id);
             if (j != null)
@@ -149,13 +101,13 @@ namespace negosuite_api.Controllers
                 JournalEntry invoiceJE = null;
                 if (e.AccountId == config.ARTradeAccountId && e.PaymentToJournalEntryId != null)
                 {
-                    invoiceJE = await _context.JournalEntries.FindAsync(e.PaymentToJournalEntryId);
+                    invoiceJE = await _context.JournalEntries.SingleOrDefaultAsync(j => j.Id == e.PaymentToJournalEntryId && j.UserConfigId == CompanyId.Value);
                     if (invoiceJE == null) return BadRequest("Invoice journal entry not found.");
                 }
 
                 if (e.AccountId == config.APTradeAccountId && e.PaymentToJournalEntryId != null)
                 {
-                    invoiceJE = await _context.JournalEntries.FindAsync(e.PaymentToJournalEntryId);
+                    invoiceJE = await _context.JournalEntries.SingleOrDefaultAsync(j => j.Id == e.PaymentToJournalEntryId && j.UserConfigId == CompanyId.Value);
                     if (invoiceJE == null) return BadRequest("Bill journal entry not found.");
                 }
 
@@ -173,7 +125,8 @@ namespace negosuite_api.Controllers
 
                         if (invoiceJE.Source == "SI")
                         {
-                            var salesInvoice = await _context.SalesInvoices.FindAsync(invoiceJE.SalesInvoiceId);
+                            var salesInvoice = await _context.SalesInvoices.SingleOrDefaultAsync(i => i.Id == invoiceJE.SalesInvoiceId && i.UserConfigId == CompanyId.Value);
+                            if (salesInvoice == null) return BadRequest("Linked invoice not found.");
                             salesInvoice.Balance = invoiceJE.Balance;
                             salesInvoice.LastUpdatedDate = DateTime.Now;
                             _context.Entry(salesInvoice).State = EntityState.Modified;
@@ -181,7 +134,8 @@ namespace negosuite_api.Controllers
 
                         if (invoiceJE.Source == "PU")
                         {
-                            var bill = await _context.Bills.FindAsync(invoiceJE.BillId);
+                            var bill = await _context.Bills.SingleOrDefaultAsync(b => b.Id == invoiceJE.BillId && b.UserConfigId == CompanyId.Value);
+                            if (bill == null) return BadRequest("Linked bill not found.");
                             bill.Balance = invoiceJE.Balance;
                             bill.LastUpdatedDate = DateTime.Now;
                             _context.Entry(bill).State = EntityState.Modified;
@@ -215,7 +169,8 @@ namespace negosuite_api.Controllers
 
                             if (invoiceJE.Source == "SI")
                             {
-                                var salesInvoice = await _context.SalesInvoices.FindAsync(invoiceJE.SalesInvoiceId);
+                                var salesInvoice = await _context.SalesInvoices.SingleOrDefaultAsync(i => i.Id == invoiceJE.SalesInvoiceId && i.UserConfigId == CompanyId.Value);
+                                if (salesInvoice == null) return BadRequest("Linked invoice not found.");
                                 salesInvoice.Balance = invoiceJE.Balance;
                                 salesInvoice.LastUpdatedDate = DateTime.Now;
                                 _context.Entry(salesInvoice).State = EntityState.Modified;
@@ -223,7 +178,8 @@ namespace negosuite_api.Controllers
 
                             if (invoiceJE.Source == "PU")
                             {
-                                var bill = await _context.Bills.FindAsync(invoiceJE.BillId);
+                                var bill = await _context.Bills.SingleOrDefaultAsync(b => b.Id == invoiceJE.BillId && b.UserConfigId == CompanyId.Value);
+                                if (bill == null) return BadRequest("Linked bill not found.");
                                 bill.Balance = invoiceJE.Balance;
                                 bill.LastUpdatedDate = DateTime.Now;
                                 _context.Entry(bill).State = EntityState.Modified;
@@ -240,7 +196,7 @@ namespace negosuite_api.Controllers
 
                 }
             }
-            
+
             _context.Entry(generalJournal).State = EntityState.Modified;
 
             try
@@ -265,8 +221,14 @@ namespace negosuite_api.Controllers
         // POST: api/GeneralJournals
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<GeneralJournal>> PostGeneralJournal(GeneralJournal generalJournal)
+        public async Task<ActionResult<GeneralJournalDetailDto>> PostGeneralJournal(GeneralJournalCreateRequest request)
         {
+            var generalJournal = TransactionWriteMapping.Map(request);
+            if (!CompanyId.HasValue) return Unauthorized();
+            if (generalJournal.UserConfigId != CompanyId) return Forbid();
+            if (generalJournal.Id != 0) return BadRequest("New transaction ID must be zero or omitted.");
+            var validationError = await service.ValidateWriteAsync(CompanyId.Value, null, generalJournal, HttpContext.RequestAborted);
+            if (validationError != null) return BadRequest(validationError);
             var j = await _context.GeneralJournals.FirstOrDefaultAsync(e => e.ReferenceNo == generalJournal.ReferenceNo && e.UserConfigId == generalJournal.UserConfigId);
             if (j != null)
             {
@@ -286,7 +248,7 @@ namespace negosuite_api.Controllers
 
             generalJournal.CreatedDate = DateTime.Now;
 
-            foreach(var e in generalJournal.JournalEntries)
+            foreach (var e in generalJournal.JournalEntries)
             {
                 e.JournalDate = generalJournal.ReferenceDate;
                 e.CreatedDate = DateTime.Now;
@@ -294,7 +256,7 @@ namespace negosuite_api.Controllers
                 // Credit AR: Subtract payment amount to invoice balance
                 if (e.AccountId == config.ARTradeAccountId && e.PaymentToJournalEntryId != null)
                 {
-                    var invoiceJE = await _context.JournalEntries.FindAsync(e.PaymentToJournalEntryId);
+                    var invoiceJE = await _context.JournalEntries.SingleOrDefaultAsync(j => j.Id == e.PaymentToJournalEntryId && j.UserConfigId == CompanyId.Value);
                     if (invoiceJE == null) return BadRequest("Data integrity error. Missing Sales Invoice record.");
                     invoiceJE.Balance = invoiceJE.Balance - e.Amount;
                     invoiceJE.LastUpdatedDate = DateTime.Now;
@@ -302,7 +264,8 @@ namespace negosuite_api.Controllers
 
                     if (invoiceJE.Source == "SI")
                     {
-                        var salesInvoice = await _context.SalesInvoices.FindAsync(invoiceJE.SalesInvoiceId);
+                        var salesInvoice = await _context.SalesInvoices.SingleOrDefaultAsync(i => i.Id == invoiceJE.SalesInvoiceId && i.UserConfigId == CompanyId.Value);
+                        if (salesInvoice == null) return BadRequest("Linked invoice not found.");
                         salesInvoice.Balance = invoiceJE.Balance;
                         salesInvoice.LastUpdatedDate = DateTime.Now;
                         _context.Entry(salesInvoice).State = EntityState.Modified;
@@ -313,7 +276,7 @@ namespace negosuite_api.Controllers
                 // Debit AP: Subtract payment amount to bill balance
                 if (e.AccountId == config.APTradeAccountId && e.PaymentToJournalEntryId != null)
                 {
-                    var invoiceJE = await _context.JournalEntries.FindAsync(e.PaymentToJournalEntryId);
+                    var invoiceJE = await _context.JournalEntries.SingleOrDefaultAsync(j => j.Id == e.PaymentToJournalEntryId && j.UserConfigId == CompanyId.Value);
                     if (invoiceJE == null) return BadRequest("Data integrity error. Missing Bill record.");
                     invoiceJE.Balance = invoiceJE.Balance - e.Amount;
                     invoiceJE.LastUpdatedDate = DateTime.Now;
@@ -321,7 +284,8 @@ namespace negosuite_api.Controllers
 
                     if (invoiceJE.Source == "PU")
                     {
-                        var bill = await _context.Bills.FindAsync(invoiceJE.BillId);
+                        var bill = await _context.Bills.SingleOrDefaultAsync(b => b.Id == invoiceJE.BillId && b.UserConfigId == CompanyId.Value);
+                        if (bill == null) return BadRequest("Linked bill not found.");
                         bill.Balance = invoiceJE.Balance;
                         bill.LastUpdatedDate = DateTime.Now;
                         _context.Entry(bill).State = EntityState.Modified;
@@ -334,15 +298,16 @@ namespace negosuite_api.Controllers
             _context.GeneralJournals.Add(generalJournal);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetGeneralJournal", new { id = generalJournal.Id }, generalJournal);
+            return CreatedAtAction("GetGeneralJournal", new { id = generalJournal.Id }, new TransactionResponseMapping().Map(generalJournal));
         }
 
         // DELETE: api/GeneralJournals/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteGeneralJournal(int id)
         {
+            if (!CompanyId.HasValue) return Unauthorized();
             var generalJournal = await _context.GeneralJournals
-                .Where(e => e.Id == id)
+                .Where(e => e.Id == id && e.UserConfigId == CompanyId.Value)
                 .Include(e => e.JournalEntries).SingleOrDefaultAsync();
 
             if (generalJournal == null)
@@ -350,6 +315,8 @@ namespace negosuite_api.Controllers
                 return NotFound();
             }
 
+            var validationError = await new TransactionWriteValidator(_context).TargetsAsync(CompanyId.Value, generalJournal.JournalEntries.Where(j => j.Status != -1), HttpContext.RequestAborted);
+            if (validationError != null) return BadRequest(validationError);
             var config = await _context.Configs.FirstOrDefaultAsync(c => c.Id == generalJournal.UserConfigId);
             if (config == null || config.ARTradeAccountId == null)
             {
@@ -380,13 +347,13 @@ namespace negosuite_api.Controllers
                 JournalEntry invoiceJE = null;
                 if (e.AccountId == config.ARTradeAccountId && e.PaymentToJournalEntryId != null)
                 {
-                    invoiceJE = await _context.JournalEntries.FindAsync(e.PaymentToJournalEntryId);
+                    invoiceJE = await _context.JournalEntries.SingleOrDefaultAsync(j => j.Id == e.PaymentToJournalEntryId && j.UserConfigId == CompanyId.Value);
                     if (invoiceJE == null) return BadRequest("Invoice journal entry not found.");
                 }
 
                 if (e.AccountId == config.APTradeAccountId && e.PaymentToJournalEntryId != null)
                 {
-                    invoiceJE = await _context.JournalEntries.FindAsync(e.PaymentToJournalEntryId);
+                    invoiceJE = await _context.JournalEntries.SingleOrDefaultAsync(j => j.Id == e.PaymentToJournalEntryId && j.UserConfigId == CompanyId.Value);
                     if (invoiceJE == null) return BadRequest("Bill journal entry not found.");
                 }
 
@@ -398,7 +365,8 @@ namespace negosuite_api.Controllers
 
                     if (invoiceJE.Source == "SI")
                     {
-                        var salesInvoice = await _context.SalesInvoices.FindAsync(invoiceJE.SalesInvoiceId);
+                        var salesInvoice = await _context.SalesInvoices.SingleOrDefaultAsync(i => i.Id == invoiceJE.SalesInvoiceId && i.UserConfigId == CompanyId.Value);
+                        if (salesInvoice == null) return BadRequest("Linked invoice not found.");
                         salesInvoice.Balance = invoiceJE.Balance;
                         salesInvoice.LastUpdatedDate = DateTime.Now;
                         _context.Entry(salesInvoice).State = EntityState.Modified;
@@ -406,7 +374,8 @@ namespace negosuite_api.Controllers
 
                     if (invoiceJE.Source == "PU")
                     {
-                        var bill = await _context.Bills.FindAsync(invoiceJE.BillId);
+                        var bill = await _context.Bills.SingleOrDefaultAsync(b => b.Id == invoiceJE.BillId && b.UserConfigId == CompanyId.Value);
+                        if (bill == null) return BadRequest("Linked bill not found.");
                         bill.Balance = invoiceJE.Balance;
                         bill.LastUpdatedDate = DateTime.Now;
                         _context.Entry(bill).State = EntityState.Modified;
@@ -448,7 +417,7 @@ namespace negosuite_api.Controllers
 
         private bool GeneralJournalExists(int id)
         {
-            return _context.GeneralJournals.Any(e => e.Id == id);
+            return _context.GeneralJournals.Any(e => e.Id == id && e.UserConfigId == CompanyId.Value);
         }
     }
 }

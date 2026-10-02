@@ -85,13 +85,40 @@ namespace negosuite_api
             services.AddHealthChecks();
             services.AddSingleton<IEmailService, EmailService>();
             services.AddScoped<ConfigUuidFilter>();
+            services.AddScoped<CompanyAccessService>();
+            services.AddScoped<UserService>();
+            services.AddScoped<UserRoleService>();
+            services.AddScoped<ConfigService>();
+            services.AddScoped<TaxRateService>();
+            services.AddScoped<DiscountTypeService>();
+            services.AddScoped<ResponsibilityCenterService>();
+            services.AddScoped<ResponsibilityCenterTypeService>();
+            services.AddScoped<InventoryLocationService>();
+            services.AddScoped<PaymentModeService>();
+            services.AddScoped<PaymentTermService>();
+            services.AddScoped<CurrencyService>();
+            services.AddScoped<CountryService>();
+            services.AddScoped<CityMunicipalityService>();
+            services.AddScoped<IndustryService>();
+            services.AddScoped<NavigationItemService>();
+            services.AddScoped<AuthenticatedUserFilter>();
             services.AddScoped<CustomerService>();
             services.AddScoped<SupplierService>();
             services.AddScoped<ItemService>();
             services.AddScoped<ItemCategoryService>();
+            services.AddScoped<AccountService>();
+            services.AddScoped<AccountCategoryService>();
             services.AddScoped<SalesInvoiceService>();
             services.AddScoped<SalesReceiptService>();
             services.AddScoped<SalesInvoicePaymentService>();
+            services.AddScoped<BillService>();
+            services.AddScoped<JournalLookupService>();
+            services.AddScoped<GeneralJournalService>();
+            services.AddScoped<ReceivingReportService>();
+            services.AddScoped<StockIssuanceService>();
+            services.AddScoped<StockTransferService>();
+            services.AddScoped<InventoryAdjustmentService>();
+            services.AddScoped<PaymentService>();
 
         }
 

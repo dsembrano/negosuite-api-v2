@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -58,45 +58,4 @@ namespace negosuite_api.Models
         public bool? AutoReferenceNo { get; set; }
 
     }
-
-
-    public partial class SPSalesReceipt
-    {
-        public int Id { get; set; }
-        public int UserConfigId { get; set; }
-        public string ReceiptNo { get; set; }
-        public DateTime ReceiptDate { get; set; }
-        public int CustomerId { get; set; }
-        public string BillingAddress { get; set; }
-        public string BillingContactName { get; set; }
-        public string BillingContactEmail { get; set; }
-        public string ShippingAddress { get; set; }
-        public string ShippingContactName { get; set; }
-        public string ShippingContactEmail { get; set; }
-        public int? PaymentModeId { get; set; }
-        public int? DepositToAccountId { get; set; }
-        public string Notes { get; set; }
-        public short Status { get; set; }
-        public decimal? DiscountAmount { get; set; }
-        public decimal? DiscountPercent { get; set; }
-        public decimal? Amount { get; set; }
-        public decimal? Balance { get; set; }
-        public string Taxes { get; set; }
-        public bool? IsTaxExclusive { get; set; }
-        public bool? DiscountIsBeforeTax { get; set; }
-        public bool? HasItemLevelDiscount { get; set; }
-        public string PurchaseOrderNo { get; set; }
-        public DateTime? PostedDate { get; set; }
-        public DateTime? CreatedDate { get; set; }
-        public DateTime? LastUpdatedDate { get; set; }
-        public int? CreatedByUserId { get; set; }
-        public int? LastUpdatedByUserId { get; set; }
-        public string ResponsibilityCenterEntry { get; set; }
-        public int? InventoryLocationId { get; set; }
-        public string CustomerName { get; set; }
-        public string CustomerTIN { get; set; }
-        public string PaymentModeName { get; set; }
-
-    }
-
 }

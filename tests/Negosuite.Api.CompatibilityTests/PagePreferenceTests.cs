@@ -30,6 +30,15 @@ public class PagePreferenceTests
         signingCredentials: new SigningCredentials(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(ApiHost.Key)), SecurityAlgorithms.HmacSha256)));
 
     [MySqlTheory]
+    [InlineData("accounts", "3210", "account-categories")]
+    [InlineData("account-categories", "3220", "accounts")]
+    [InlineData("general-journals", "4310", "bills")]
+    [InlineData("receiving-reports", "4405", "bills")]
+    [InlineData("inventory-adjustments", "4410", "bills")]
+    [InlineData("stock-transfers", "4420", "bills")]
+    [InlineData("stock-issuances", "4430", "bills")]
+    [InlineData("bills", "4210", "payments")]
+    [InlineData("payments", "4240", "bills")]
     [InlineData("customers", "3110", "suppliers")]
     [InlineData("suppliers", "3120", "customers")]
     [InlineData("items", "3130", "customers")]
@@ -61,8 +70,8 @@ public class PagePreferenceTests
             inactive.Status = false; denied.UserRoleId = null;
             db.Users.AddRange(first, second, inactive, denied); db.AppVersions.Add(new AppVersion { Id = 1, VersionCode = "test" }); await db.SaveChangesAsync();
             var path = "/api/me/page-preferences/" + pageKey;
-            var column = pageKey switch { "items" => "unit", "item-categories" => "status", "sales-invoices" => "dueDate", "sales-receipts" => "receiptDate", "sales-invoice-payments" => "referenceDate", _ => "address" };
-            var secondColumn = pageKey switch { "items" => "cost", "sales-invoices" or "sales-receipts" or "sales-invoice-payments" => "balance", _ => "tin" };
+            var column = pageKey switch { "accounts" => "categoryName", "account-categories" => "type", "general-journals" or "receiving-reports" or "stock-transfers" or "stock-issuances" or "inventory-adjustments" => "referenceDate", "bills" => "billDate", "payments" => "referenceDate", "items" => "unit", "item-categories" => "status", "sales-invoices" => "dueDate", "sales-receipts" => "receiptDate", "sales-invoice-payments" => "referenceDate", _ => "address" };
+            var secondColumn = pageKey switch { "accounts" => "parentAccountName", "account-categories" => "accountCount", "general-journals" or "receiving-reports" or "stock-transfers" or "stock-issuances" or "inventory-adjustments" => "notes", "items" => "cost", "bills" or "payments" or "sales-invoices" or "sales-receipts" or "sales-invoice-payments" => "balance", _ => "tin" };
             void As(int id, string companyUuid = null)
             {
                 host.Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Token(id));
@@ -94,7 +103,7 @@ public class PagePreferenceTests
             As(second.Id); Assert.Empty((await host.Client.GetFromJsonAsync<PagePreferenceResponse>(path)).Columns);
             Assert.Equal(HttpStatusCode.Conflict, (await host.Client.PutAsJsonAsync(path, new { version = 1, columns = new { address = false } })).StatusCode);
             As(first.Id, other.Uuid); Assert.Equal(HttpStatusCode.Forbidden, (await host.Client.GetAsync(path)).StatusCode);
-            As(inactive.Id); Assert.Equal(HttpStatusCode.Forbidden, (await host.Client.GetAsync(path)).StatusCode);
+            As(inactive.Id); Assert.Equal(HttpStatusCode.Unauthorized, (await host.Client.GetAsync(path)).StatusCode);
             As(denied.Id); Assert.Equal(HttpStatusCode.Forbidden, (await host.Client.GetAsync(path)).StatusCode);
             As(first.Id); Assert.Equal(HttpStatusCode.NotFound, (await host.Client.GetAsync("/api/me/page-preferences/unknown")).StatusCode);
             Assert.Equal(HttpStatusCode.BadRequest, (await host.Client.PutAsJsonAsync(path, new { version = -1, columns = new { address = true } })).StatusCode);

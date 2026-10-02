@@ -1,174 +1,67 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using negosuite_api.Contracts.Customers;
+using negosuite_api.Contracts.Transactions;
 using negosuite_api.Models;
+using negosuite_api.Services;
 using Newtonsoft.Json;
 
-namespace negosuite_api.Controllers
+namespace negosuite_api.Controllers;
+
+[Authorize, TypeFilter(typeof(ConfigUuidFilter)), ApiController]
+[Route("api/journal-entries")]
+public class JournalEntriesController : ControllerBase
 {
-    [Authorize]
-    [TypeFilter(typeof(ConfigUuidFilter))]
-    [Route("api/journal-entries")]
-    [ApiController]
-    public class JournalEntriesController : ControllerBase
+    private readonly JournalLookupService service;
+    [ActivatorUtilitiesConstructor]
+    public JournalEntriesController(JournalLookupService service) => this.service = service;
+    public JournalEntriesController(negosuiteContext context) : this(new JournalLookupService(context)) { }
+    private int? CompanyId => HttpContext?.Items[ConfigUuidFilter.CompanyIdKey] as int?;
+
+    [HttpGet("unpaid-invoices")]
+    public Task<ActionResult> GetUnpaidInvoices(string criteria, [FromQuery] int? pageNumber = null, [FromQuery] int? pageSize = null,
+        [FromQuery] string search = null, [FromQuery] string sortBy = null, [FromQuery] string sortDirection = null, CancellationToken cancellationToken = default) =>
+        List("invoice", criteria, pageNumber, pageSize, search, sortBy, sortDirection, cancellationToken);
+
+    [HttpGet("unpaid-bills")]
+    public Task<ActionResult> GetUnpaidBills(string criteria, [FromQuery] int? pageNumber = null, [FromQuery] int? pageSize = null,
+        [FromQuery] string search = null, [FromQuery] string sortBy = null, [FromQuery] string sortDirection = null, CancellationToken cancellationToken = default) =>
+        List("bill", criteria, pageNumber, pageSize, search, sortBy, sortDirection, cancellationToken);
+
+    [HttpGet("unapplied-ar-credits")]
+    public Task<ActionResult> GetUnAppliedARCredits(string criteria, [FromQuery] int? pageNumber = null, [FromQuery] int? pageSize = null,
+        [FromQuery] string search = null, [FromQuery] string sortBy = null, [FromQuery] string sortDirection = null, CancellationToken cancellationToken = default) =>
+        List("credit", criteria, pageNumber, pageSize, search, sortBy, sortDirection, cancellationToken);
+
+    private async Task<ActionResult> List(string kind, string criteria, int? page, int? size, string search, string sort, string direction, CancellationToken ct)
     {
-        private readonly negosuiteContext _context;
+        if (!CompanyId.HasValue) return Unauthorized();
+        if (!CustomerPagination.IsValid(page, size)) return BadRequest("Supply both pageNumber (1 or greater) and pageSize (1 to 200), within the supported offset range.");
+        if (!JournalLookupService.IsValidSort(kind, sort, direction)) return BadRequest("Unsupported sortBy or sortDirection.");
+        JournalLookupCriteria filter;
+        try { filter = string.IsNullOrWhiteSpace(criteria) ? null : JsonConvert.DeserializeObject<JournalLookupCriteria>(criteria); }
+        catch (JsonException) { return BadRequest("Invalid criteria JSON."); }
+        if (filter == null) return BadRequest("criteria is required.");
+        if (filter.UserConfigId.HasValue && filter.UserConfigId != CompanyId) return Forbid();
+        return Ok(await service.ListAsync(kind, CompanyId.Value, filter, page, size, search, sort, direction, ct));
+    }
 
-        public JournalEntriesController(negosuiteContext context)
-        {
-            _context = context;
-        }
+    [HttpGet("unapplied-ar-credits/{id}")]
+    public async Task<ActionResult<UnappliedCreditDetailDto>> GetUnAppliedARCredit(int id, CancellationToken cancellationToken = default)
+    {
+        if (!CompanyId.HasValue) return Unauthorized();
+        var result = await service.GetAsync(CompanyId.Value, id, cancellationToken);
+        return result == null ? NotFound() : result;
+    }
 
-        // GET: api/JournalEntries
-        [Route("unpaid-invoices")]
-        [HttpGet]
-        public async Task<ActionResult> GetUnpaidInvoices(string criteria)
-        {
-            SelectCriteria selectCriteria = !string.IsNullOrEmpty(criteria) ? JsonConvert.DeserializeObject<SelectCriteria>(criteria) : null;
-
-            var arTradeAccountId = selectCriteria.AccountId;
-
-            /*
-            var config = await _context.Configs.FirstOrDefaultAsync();
-            if (config == null || config.ARTradeAccountId == null)
-            {
-                return BadRequest();
-            }*/
-           
-            var result = await _context.JournalEntries
-                .Where(e => e.Nature == "D" && e.AccountId == arTradeAccountId && e.Balance > 0)
-                .Where(e => e.CustomerId == selectCriteria.CustomerId)
-                .Where(e => (selectCriteria.PeriodStart != null ?  e.JournalDate >= selectCriteria.PeriodStart : true ) )
-                .Where(e => (selectCriteria.PeriodEnd != null ? e.JournalDate <= selectCriteria.PeriodEnd : true) )
-                .Select(e => new
-                {
-                    JournalEntryId = e.Id,
-                    InvoiceNo = e.ReferenceNo,
-                    InvoiceDate = e.JournalDate,
-                    e.DueDate,
-                    e.Amount,
-                    e.Balance
-                }).OrderBy(e => e.InvoiceDate).ThenBy(e => e.InvoiceNo).ToListAsync();
-
-            return Ok(result);
-        }
-
-
-        // GET: api/JournalEntries
-        [Route("unpaid-bills")]
-        [HttpGet]
-        public async Task<ActionResult> GetUnpaidBills(string criteria)
-        {
-            SelectCriteria selectCriteria = !string.IsNullOrEmpty(criteria) ? JsonConvert.DeserializeObject<SelectCriteria>(criteria) : null;
-
-            var apTradeAccountId = selectCriteria.AccountId;
-
-            /*
-            var config = await _context.Configs.FirstOrDefaultAsync();
-            if (config == null || config.APTradeAccountId == null)
-            {
-                return BadRequest();
-            }*/
-
-            var result = await _context.JournalEntries
-                .Where(e => e.Nature == "C" && e.AccountId == apTradeAccountId && e.Balance > 0)
-                .Where(e => e.SupplierId == selectCriteria.SupplierId)
-                .Where(e => (selectCriteria.PeriodStart != null ? e.JournalDate >= selectCriteria.PeriodStart : true))
-                .Where(e => (selectCriteria.PeriodEnd != null ? e.JournalDate <= selectCriteria.PeriodEnd : true))
-                .Select(e => new
-                {
-                    JournalEntryId = e.Id,
-                    BillNo = e.ReferenceNo,
-                    BillDate = e.JournalDate,
-                    e.DueDate,
-                    e.Amount,
-                    e.Balance
-                }).OrderBy(e => e.BillDate).ThenBy(e => e.BillNo).ToListAsync();
-
-            return Ok(result);
-        }
-
-
-        [AllowAnonymous]
-        [Route("unapplied-ar-credits")]
-        [HttpGet]
-        public async Task<ActionResult> GetUnAppliedARCredits(string criteria)
-        {
-            SelectCriteria selectCriteria = !string.IsNullOrEmpty(criteria) ? JsonConvert.DeserializeObject<SelectCriteria>(criteria) : null;
-
-            var config = await _context.Configs.FirstOrDefaultAsync(c => c.Id == selectCriteria.UserConfigId);
-            //var arTradeAccountId = selectCriteria.AccountId;
-            var arTradeAccountId = config.ARTradeAccountId;
-
-            var result = await _context.JournalEntries
-                .Where(e => e.Nature == "C" && e.AccountId == arTradeAccountId && e.Balance > 0)
-                .Where(e => (selectCriteria.CustomerId != null) ? e.CustomerId == selectCriteria.CustomerId : true)
-                .Where(e => (selectCriteria.PeriodStart != null ? e.JournalDate >= selectCriteria.PeriodStart : true))
-                .Where(e => (selectCriteria.PeriodEnd != null ? e.JournalDate <= selectCriteria.PeriodEnd : true))
-                .Select(e => new
-                {
-                    e.Id,
-                    e.ReferenceNo,
-                    ReferenceDate = e.JournalDate,
-                    e.CustomerId,
-                    CustomerName = e.Customer.Name,
-                    e.DueDate,
-                    e.Amount,
-                    e.Balance,
-                    e.Source,
-                    SourceName = FinancialReportsController.GetJournalSourceName(e.Source)
-                }).OrderBy(e => e.ReferenceDate).ThenBy(e => e.ReferenceNo).ToListAsync();
-
-            return Ok(result);
-        }
-
-
-        [AllowAnonymous]
-        [Route("unapplied-ar-credits/{id}")]
-        [HttpGet]
-        public async Task<ActionResult> GetUnAppliedARCredit(int id)
-        {
-
-            var result = await _context.JournalEntries.Where(j => j.Id == id)
-                .Include(j => j.Account)
-                .Include(j => j.Customer)
-                .Select(e => new
-                {
-                    e.Id,
-                    e.ReferenceNo,
-                    ReferenceDate = e.JournalDate,
-                    e.Customer,
-                    e.CustomerId,
-                    CustomerName = e.Customer.Name,
-                    e.DueDate,
-                    e.Amount,
-                    e.Balance,
-                    e.Source,
-                    SourceName = FinancialReportsController.GetJournalSourceName(e.Source)
-                }).FirstOrDefaultAsync();
-
-            return Ok(result);
-        }
-
-
-        private bool JournalEntryExists(int id)
-        {
-            return _context.JournalEntries.Any(e => e.Id == id);
-        }
-
-        public static void SanitizeEntries(ICollection<JournalEntry> journalEntries)
-        {
-            journalEntries.ToList().ForEach(e =>
-            {
-                e.Amount = Math.Round(e.Amount, 2);
-                e.Balance = Math.Round(e.Balance, 2);
-            });
-        }
-
+    public static void SanitizeEntries(ICollection<JournalEntry> journalEntries)
+    {
+        foreach (var entry in journalEntries) { entry.Amount = Math.Round(entry.Amount, 2); entry.Balance = Math.Round(entry.Balance, 2); }
     }
 }

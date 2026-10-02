@@ -1,4 +1,5 @@
 using System;
+using negosuite_api.Contracts.Transactions;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -54,15 +55,16 @@ namespace negosuite_api.Controllers
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<SalesReceipt>> GetSalesReceipt(int id, CancellationToken cancellationToken = default)
+        public async Task<ActionResult<SalesReceiptDetailDto>> GetSalesReceipt(int id, CancellationToken cancellationToken = default)
         {
             if (!CompanyId.HasValue) return Unauthorized();
             var result = await service.GetAsync(CompanyId.Value, id, cancellationToken);
-            return result == null ? NotFound() : result;
+            return result == null ? NotFound() : new TransactionResponseMapping().Map(result);
         }
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutSalesReceipt(int id, SalesReceipt salesReceipt)
+        public async Task<IActionResult> PutSalesReceipt(int id, SalesReceiptUpdateRequest request)
         {
+            var salesReceipt = TransactionWriteMapping.Map(request);
             if (!CompanyId.HasValue) return Unauthorized();
             if (salesReceipt.UserConfigId != CompanyId) return Forbid();
             if (id != salesReceipt.Id)
@@ -156,8 +158,9 @@ namespace negosuite_api.Controllers
 
 
         [HttpPost]
-        public async Task<ActionResult<SalesReceipt>> PostSalesReceipt(SalesReceipt salesReceipt)
+        public async Task<ActionResult<SalesReceiptDetailDto>> PostSalesReceipt(SalesReceiptCreateRequest request)
         {
+            var salesReceipt = TransactionWriteMapping.Map(request);
             if (!CompanyId.HasValue) return Unauthorized();
             if (salesReceipt.UserConfigId != CompanyId) return Forbid();
             if (salesReceipt.Id != 0) return BadRequest("New transaction ID must be zero or omitted.");
@@ -193,7 +196,7 @@ namespace negosuite_api.Controllers
             _context.SalesReceipts.Add(salesReceipt);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetSalesReceipt", new { id = salesReceipt.Id }, salesReceipt);
+            return CreatedAtAction("GetSalesReceipt", new { id = salesReceipt.Id }, new TransactionResponseMapping().Map(salesReceipt));
         }
 
         // DELETE: api/SalesReceipts/5

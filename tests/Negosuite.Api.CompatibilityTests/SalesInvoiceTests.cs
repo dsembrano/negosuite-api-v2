@@ -74,7 +74,7 @@ public class SalesInvoiceTests
             string Url(object criteria) => path + "?criteria=" + Uri.EscapeDataString(JsonSerializer.Serialize(criteria));
             var url = Url(new { userConfigId = company.Id });
             Assert.Equal(HttpStatusCode.Unauthorized, (await host.Client.GetAsync(url)).StatusCode);
-            host.Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", ApiHost.Token()); host.Client.DefaultRequestHeaders.Add("configUuid", company.Uuid);
+            host.Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", await ApiHost.MemberTokenAsync(db, company.Id)); host.Client.DefaultRequestHeaders.Add("configUuid", company.Uuid);
             var rows = await host.Client.GetFromJsonAsync<SalesInvoiceListItemDto[]>(url);
             Assert.Equal(7, rows.Length);
             Assert.Equal(new[] { partial.Id, paid.Id, zero.Id, overdue.Id, future.Id, first.Id, midday.Id }, rows.Select(i => i.Id));
@@ -148,7 +148,7 @@ public class SalesInvoiceTests
             var category = new AccountCategory { UserConfigId = company.Id, Name = "Sales", Type = "I" };
             var account = new Account { UserConfigId = company.Id, Name = "Sales", Code = "4000", Category = category };
             db.Customers.AddRange(customer, foreignCustomer); db.Items.Add(item); db.Accounts.Add(account); await db.SaveChangesAsync();
-            host.Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", ApiHost.Token()); host.Client.DefaultRequestHeaders.Add("configUuid", company.Uuid);
+            host.Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", await ApiHost.MemberTokenAsync(db, company.Id)); host.Client.DefaultRequestHeaders.Add("configUuid", company.Uuid);
             const string path = "/api/sales-invoices";
             SalesInvoice Invoice(string number) => new() { UserConfigId = company.Id, CustomerId = customer.Id, InvoiceNo = number, InvoiceDate = DateTime.Today,
                 DueDate = DateTime.Today.AddDays(30), Amount = 100, Balance = 100, Status = 1,

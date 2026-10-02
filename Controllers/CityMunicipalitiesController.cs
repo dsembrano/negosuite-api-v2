@@ -1,124 +1,39 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using negosuite_api.Contracts.Administration;
+using negosuite_api.Contracts.ReferenceData;
 using negosuite_api.Models;
+using negosuite_api.Services;
 
-namespace negosuite_api.Controllers
+namespace negosuite_api.Controllers;
+
+[Authorize, ApiController, Route("api/city-municipalities")]
+[TypeFilter(typeof(ConfigUuidFilter)), TypeFilter(typeof(AdministrationExceptionFilter))]
+public class CityMunicipalitiesController : ControllerBase
 {
-    [Authorize]
-    [TypeFilter(typeof(ConfigUuidFilter))]
-    [Route("api/city-municipalities")]
-    [ApiController]
-    public class CityMunicipalitiesController : ControllerBase
-    {
-        private readonly negosuiteContext _context;
+    private readonly CityMunicipalityService service;
+    public CityMunicipalitiesController(CityMunicipalityService service) => this.service = service;
+    private User Actor => (User)HttpContext.Items[CompanyAccessService.ActorKey];
 
-        public CityMunicipalitiesController(negosuiteContext context)
-        {
-            _context = context;
-        }
+    [HttpGet]
+    public async Task<ActionResult> GetList([FromQuery] AdministrationListOptions options, [FromQuery] ReferenceDataFilter filter, CancellationToken ct) =>
+        Ok(await service.ListAsync(options, filter, ct));
 
-        // GET: api/CityMunicipalities
-        [HttpGet]
-        public async Task<ActionResult> GetCityMunicipalities()
-        {
-            var result = await _context.CityMunicipalities
-                .Select(c => new
-                {
-                    c.Id,
-                    c.Name,
-                    c.StateProvinceId,
-                    StateProvinceName = c.StateProvince.Name,
-                    SelectOptionName = $"{c.Name}, {c.StateProvince.Name}",
-                    c.PostalCode
-                }).ToListAsync();
+    [HttpGet("{id}")]
+    public async Task<ActionResult<CityMunicipalityDetailDto>> GetCityMunicipality(int id, CancellationToken ct)
+    { var value = await service.GetAsync(id, ct); return value == null ? NotFound() : value; }
 
-            return Ok(result);
-        }
+    [HttpPost]
+    public async Task<ActionResult<CityMunicipalityDetailDto>> PostCityMunicipality(CityMunicipalityCreateRequest input, CancellationToken ct)
+    { var value = await service.SaveAsync(Actor, null, input, ct); return CreatedAtAction(nameof(GetCityMunicipality), new { id = value.Id }, value); }
 
-        // GET: api/CityMunicipalities/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<CityMunicipality>> GetCityMunicipality(int id)
-        {
-            var cityMunicipality = await _context.CityMunicipalities
-                .Where(c => c.Id == id)
-                .Include(c => c.StateProvince)
-                .SingleOrDefaultAsync();
+    [HttpPut("{id}")]
+    public async Task<IActionResult> PutCityMunicipality(int id, CityMunicipalityUpdateRequest input, CancellationToken ct)
+    { await service.SaveAsync(Actor, id, input, ct); return NoContent(); }
 
-            if (cityMunicipality == null)
-            {
-                return NotFound();
-            }
-
-            return cityMunicipality;
-        }
-
-        // PUT: api/CityMunicipalities/5
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutCityMunicipality(int id, CityMunicipality cityMunicipality)
-        {
-            cityMunicipality.LastUpdatedDate = DateTime.Now;
-            if (id != cityMunicipality.Id)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(cityMunicipality).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!CityMunicipalityExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return NoContent();
-        }
-
-        // POST: api/CityMunicipalities
-        [HttpPost]
-        public async Task<ActionResult<CityMunicipality>> PostCityMunicipality(CityMunicipality cityMunicipality)
-        {
-            cityMunicipality.CreatedDate = DateTime.Now;
-            _context.CityMunicipalities.Add(cityMunicipality);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction("GetCityMunicipality", new { id = cityMunicipality.Id }, cityMunicipality);
-        }
-
-        // DELETE: api/CityMunicipalities/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteCityMunicipality(int id)
-        {
-            var cityMunicipality = await _context.CityMunicipalities.FindAsync(id);
-            if (cityMunicipality == null)
-            {
-                return NotFound();
-            }
-
-            _context.CityMunicipalities.Remove(cityMunicipality);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
-        }
-
-        private bool CityMunicipalityExists(int id)
-        {
-            return _context.CityMunicipalities.Any(e => e.Id == id);
-        }
-    }
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteCityMunicipality(int id, CancellationToken ct)
+    { await service.DeleteAsync(id, ct); return NoContent(); }
 }

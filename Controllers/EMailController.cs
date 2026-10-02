@@ -71,8 +71,16 @@ namespace negosuite_api.Controllers
 
 		[Route("member-invite")]
 		[HttpPost]
-		public IActionResult SendMemberInvite([FromBody] EmailPayload payload)
+		public async Task<IActionResult> SendMemberInvite([FromBody] EmailPayload payload)
 		{
+            var actor = await new CompanyAccessService(_context).CurrentAsync(User, HttpContext.RequestAborted);
+            if (actor == null) return Unauthorized();
+            if (!CompanyAccessService.IsAdmin(actor) || payload.ConfigId != actor.ConfigId) return Forbid();
+            if (payload.Recipients == null || payload.Recipients.Count == 0 || string.IsNullOrWhiteSpace(payload.Recipients[0])) return BadRequest("A recipient is required.");
+            if (payload.UserRoleId.HasValue && !await _context.UserRoles.AnyAsync(r => r.Id == payload.UserRoleId && (r.UserConfigId == actor.ConfigId || r.UserConfigId == null)))
+                return BadRequest("Role must belong to this company or be a shared system role.");
+            if (!Guid.TryParse(payload.Identifier, out _)) return BadRequest("A valid invitation identifier is required.");
+            payload.ExpiryDate = DateTime.Now.AddDays(7);
             var settings = new JsonSerializerSettings
             {
                 ContractResolver = new DefaultContractResolver

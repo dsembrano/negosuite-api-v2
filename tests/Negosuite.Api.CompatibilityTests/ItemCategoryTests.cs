@@ -53,7 +53,7 @@ public class ItemCategoryTests
             string Url(object criteria) => path + "?criteria=" + Uri.EscapeDataString(JsonSerializer.Serialize(criteria));
             var url = Url(new { userConfigId = company.Id });
             Assert.Equal(HttpStatusCode.Unauthorized, (await host.Client.GetAsync(url)).StatusCode);
-            host.Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", ApiHost.Token());
+            host.Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", await ApiHost.MemberTokenAsync(db, company.Id));
             host.Client.DefaultRequestHeaders.Add("configUuid", company.Uuid);
             var legacy = await host.Client.GetFromJsonAsync<JsonElement>(url);
             // Same projection fields and values as the original entity-returning controller.

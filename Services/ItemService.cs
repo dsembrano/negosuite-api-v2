@@ -17,7 +17,7 @@ public sealed class ItemService
     public ItemService(negosuiteContext db) => this.db = db;
     public const string DuplicateSku = "SKU already exist. Duplicate is not allowed";
 
-    public async Task<object> ListAsync(int company, ItemListCriteria filter, int? page, int? size, string search, string sort, string direction, bool? toSell, bool? toPurchase, CancellationToken ct)
+    public async Task<object> ListAsync(int company, ItemListCriteria filter, int? page, int? size, string search, string sort, string direction, bool? toSell, bool? toPurchase, CancellationToken ct, bool? trackInventory = null)
     {
         var query = db.Items.AsNoTracking().Where(i => i.UserConfigId == company);
         if (filter.ShowInactive != true) query = query.Where(i => i.Status);
@@ -26,6 +26,7 @@ public sealed class ItemService
         // New explicit query flags avoid changing historically ignored legacy criteria properties.
         if (toSell.HasValue) query = query.Where(i => i.ToSell == toSell);
         if (toPurchase.HasValue) query = query.Where(i => i.ToPurchase == toPurchase);
+        if (trackInventory.HasValue) query = query.Where(i => i.TrackInventory == trackInventory);
         query = ItemQuery.Search(query, search);
         var count = page.HasValue ? await query.CountAsync(ct) : 0;
         query = ItemQuery.Sort(query, sort, direction);

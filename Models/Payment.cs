@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 #nullable disable
@@ -40,40 +40,4 @@ namespace negosuite_api.Models
         public virtual ICollection<JournalEntry> JournalEntries { get; set; }
         public string ResponsibilityCenterEntry { get; set; }
     }
-
-
-
-    public partial class SPPayment
-    {
-
-        public int Id { get; set; }
-        public int UserConfigId { get; set; }
-        public string ReferenceNo { get; set; }
-        public DateTime ReferenceDate { get; set; }
-        public int? SupplierId { get; set; }
-        public int? CustomerId { get; set; }
-        public bool IsBillPayment { get; set; }
-        public string Payee { get; set; }
-        public int? PaymentModeId { get; set; }
-        public string CheckNo { get; set; }
-        public int? PaidThroughAccountId { get; set; }
-        public string Notes { get; set; }
-        public short Status { get; set; }
-        public decimal? Amount { get; set; }
-        public decimal? Balance { get; set; }
-        public DateTime? PostedDate { get; set; }
-        public DateTime? CreatedDate { get; set; }
-        public DateTime? LastUpdatedDate { get; set; }
-        public int? CreatedByUserId { get; set; }
-        public int? LastUpdatedByUserId { get; set; }
-
-        public string SupplierName { get; set; }
-        public string CustomerName { get; set; }
-        public string PaymentModeName { get; set; }
-        public string PaidThroughAccountName { get; set; }
-        public string ResponsibilityCenterEntry { get; set; }
-
-    }
-
-
 }

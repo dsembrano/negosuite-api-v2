@@ -51,12 +51,21 @@ public sealed class ApiHost : IDisposable
         Client = Server.CreateClient();
         Client.BaseAddress = new Uri("https://localhost");
     }
-    public static string Token(string issuer = "phase3", string audience = "phase3", string key = Key, bool expired = false)
+    public static string Token(string issuer = "phase3", string audience = "phase3", string key = Key, bool expired = false, int? userId = null)
     {
-        var token = new JwtSecurityToken(issuer, audience, new[] { new Claim("sub", "compatibility-test") },
+        var claims = new List<Claim> { new Claim("sub", "compatibility-test") };
+        if (userId.HasValue) claims.Add(new Claim("negosuite_user_id", userId.Value.ToString(CultureInfo.InvariantCulture)));
+        var token = new JwtSecurityToken(issuer, audience, claims,
             notBefore: DateTime.UtcNow.AddHours(-2), expires: expired ? DateTime.UtcNow.AddHours(-1) : DateTime.UtcNow.AddMinutes(5),
             signingCredentials: new SigningCredentials(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key)), SecurityAlgorithms.HmacSha256));
         return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+    public static async Task<string> MemberTokenAsync(negosuiteContext db, int companyId)
+    {
+        var user = new User { Name = "Authenticated fixture member", Email = Guid.NewGuid().ToString("N") + "@example.test",
+            Password = "unused-fixture-password", Status = true, ConfigId = companyId };
+        db.Users.Add(user); await db.SaveChangesAsync();
+        return Token(userId: user.Id);
     }
     public void Dispose() { Client.Dispose(); host.Dispose(); }
 }

@@ -1,4 +1,5 @@
 using System;
+using negosuite_api.Contracts.Transactions;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -56,16 +57,17 @@ namespace negosuite_api.Controllers
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<SalesInvoice>> GetSalesInvoice(int id, CancellationToken cancellationToken = default)
+        public async Task<ActionResult<SalesInvoiceDetailDto>> GetSalesInvoice(int id, CancellationToken cancellationToken = default)
         {
             if (!CompanyId.HasValue) return Unauthorized();
             var invoice = await invoices.GetAsync(CompanyId.Value, id, cancellationToken);
-            return invoice == null ? NotFound() : invoice;
+            return invoice == null ? NotFound() : new TransactionResponseMapping().Map(invoice);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutSalesInvoice(int id, SalesInvoice salesInvoice)
+        public async Task<IActionResult> PutSalesInvoice(int id, SalesInvoiceUpdateRequest request)
         {
+            var salesInvoice = TransactionWriteMapping.Map(request);
             if (!CompanyId.HasValue) return Unauthorized();
             if (salesInvoice.UserConfigId != CompanyId) return Forbid();
             if (id != salesInvoice.Id)
@@ -166,8 +168,9 @@ namespace negosuite_api.Controllers
         // POST: api/sales-Invoices
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<SalesInvoice>> PostSalesInvoice(SalesInvoice salesInvoice)
+        public async Task<ActionResult<SalesInvoiceDetailDto>> PostSalesInvoice(SalesInvoiceCreateRequest request)
         {
+            var salesInvoice = TransactionWriteMapping.Map(request);
             if (!CompanyId.HasValue) return Unauthorized();
             if (salesInvoice.UserConfigId != CompanyId) return Forbid();
             if (salesInvoice.Id != 0) return BadRequest("New invoice ID must be zero or omitted.");
@@ -202,7 +205,7 @@ namespace negosuite_api.Controllers
             _context.SalesInvoices.Add(salesInvoice);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetSalesInvoice", new { id = salesInvoice.Id }, salesInvoice);
+            return CreatedAtAction("GetSalesInvoice", new { id = salesInvoice.Id }, new TransactionResponseMapping().Map(salesInvoice));
         }
 
         // DELETE: api/sales-invoices/5

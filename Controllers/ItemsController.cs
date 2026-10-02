@@ -29,7 +29,7 @@ public class ItemsController : ControllerBase
     public async Task<ActionResult> GetItems(string criteria, [FromQuery] int? pageNumber = null,
         [FromQuery] int? pageSize = null, CancellationToken cancellationToken = default, [FromQuery] string search = null,
         [FromQuery] string sortBy = null, [FromQuery] string sortDirection = null,
-        [FromQuery] bool? toSell = null, [FromQuery] bool? toPurchase = null)
+        [FromQuery] bool? toSell = null, [FromQuery] bool? toPurchase = null, [FromQuery] bool? trackInventory = null)
     {
         if (!CompanyId.HasValue) return Unauthorized();
         if (!CustomerPagination.IsValid(pageNumber, pageSize)) return BadRequest("Supply both pageNumber (1 or greater) and pageSize (1 to 200), within the supported offset range.");
@@ -38,7 +38,7 @@ public class ItemsController : ControllerBase
         try { filter = Parse(criteria); } catch (JsonException) { return BadRequest("Invalid item criteria JSON."); }
         if (filter?.UserConfigId == null) return BadRequest("criteria.userConfigId is required.");
         if (filter.UserConfigId != CompanyId) return Forbid();
-        return Ok(await items.ListAsync(CompanyId.Value, filter, pageNumber, pageSize, search, sortBy, sortDirection, toSell, toPurchase, cancellationToken));
+        return Ok(await items.ListAsync(CompanyId.Value, filter, pageNumber, pageSize, search, sortBy, sortDirection, toSell, toPurchase, cancellationToken, trackInventory));
     }
 
     [HttpGet("{id}")]

@@ -1,4 +1,9 @@
-﻿using System;
+using System;
+using System.Threading;
+using Microsoft.Extensions.DependencyInjection;
+using negosuite_api.Contracts.Customers;
+using negosuite_api.Contracts.Transactions;
+using negosuite_api.Services;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -18,96 +23,55 @@ namespace negosuite_api.Controllers
     public class StockTransfersController : ControllerBase
     {
         private readonly negosuiteContext _context;
+        private readonly StockTransferService service;
 
-        public StockTransfersController(negosuiteContext context)
+        [ActivatorUtilitiesConstructor]
+        public StockTransfersController(negosuiteContext context, StockTransferService service)
         {
             _context = context;
+            this.service = service;
         }
 
-        /*
-        [HttpGet]
-        public async Task<ActionResult> GetStockTransfers(string criteria)
-        {
-            SelectCriteria selectCriteria = JsonConvert.DeserializeObject<SelectCriteria>(criteria);
-
-            var result = await _context.StockTransfers
-                .Where(e => selectCriteria.ReferenceNo != null ? e.ReferenceNo == selectCriteria.ReferenceNo : true)
-                .Where(a => a.UserConfigId == selectCriteria.UserConfigId)
-                .Where(e => selectCriteria.PeriodStart.HasValue && selectCriteria.PeriodEnd.HasValue ? e.ReferenceDate >= selectCriteria.PeriodStart && e.ReferenceDate <= selectCriteria.PeriodEnd : true)
-                .Where(e => selectCriteria != null && selectCriteria.ShowDeleted == true ? true : e.Status != GeneralJournalsController.STATUS_DELETED)
-               .Select(e => new
-               {
-                   e.Id,
-                   e.ReferenceNo,
-                   e.ReferenceDate,
-                   FromInventoryLocationName = e.FromInventoryLocation.Name,
-                   ToInventoryLocationName = e.ToInventoryLocation.Name,
-                   e.Notes,
-                   e.Status,
-                   StatusName = GetStatusName(e)
-               }).ToListAsync();
-
-            return Ok(result);
-        }*/
-
+        public StockTransfersController(negosuiteContext context) : this(context, new StockTransferService(context)) { }
+        private int? CompanyId => HttpContext?.Items[ConfigUuidFilter.CompanyIdKey] as int?;
 
         [HttpGet]
-        public async Task<ActionResult> GetStockTransfers(string criteria)
+        public async Task<ActionResult> GetStockTransfers(string criteria, [FromQuery] int? pageNumber = null,
+            [FromQuery] int? pageSize = null, CancellationToken cancellationToken = default,
+            [FromQuery] string search = null, [FromQuery] string sortBy = null, [FromQuery] string sortDirection = null,
+            [FromQuery] short? status = null)
         {
-            SelectCriteria selectCriteria = JsonConvert.DeserializeObject<SelectCriteria>(criteria);
-
-            var userConfigId = selectCriteria.UserConfigId.ToString();
-            var periodStart = selectCriteria.PeriodStart?.ToString("yyyy-MM-dd");
-            var periodEnd = selectCriteria.PeriodEnd?.ToString("yyyy-MM-dd"); ;
-            var referenceNo = (selectCriteria.ReferenceNo != null) ? selectCriteria.ReferenceNo.ToString() : "";
-            var arrayString = string.IsNullOrEmpty(selectCriteria.ArrayString) ? "" : selectCriteria.ArrayString;
-
-            var list = await _context.SPStockTransfers
-                .FromSqlInterpolated($"CALL GetStockTransfers({userConfigId}, {periodStart}, {periodEnd}, {referenceNo}, {arrayString})")
-                .ToListAsync();
-
-            var result = list
-                .Select(e => new
-                {
-                    e.Id,
-                    e.ReferenceNo,
-                    e.ReferenceDate,
-                    e.Notes,
-                    e.FromInventoryLocationName,
-                    e.ToInventoryLocationName,
-                    e.ResponsibilityCenterEntry,
-                    e.Status,
-                    StatusName = GetStatusName(e)
-                }).OrderBy(e => e.ReferenceDate).ThenBy(e => e.ReferenceNo).ToList();
-
-            return Ok(result);
+            if (!CompanyId.HasValue) return Unauthorized();
+            if (!CustomerPagination.IsValid(pageNumber, pageSize)) return BadRequest("Supply both pageNumber (1 or greater) and pageSize (1 to 200), within the supported offset range.");
+            if (!StockTransferQuery.IsValidSort(sortBy, sortDirection)) return BadRequest("Unsupported sortBy or sortDirection. Use a supported column and asc or desc.");
+            if (status.HasValue && status is not (-1 or 0 or 1)) return BadRequest("status must be -1 (deleted), 0 (draft) or 1 (posted).");
+            TransactionListCriteria filter;
+            try { filter = string.IsNullOrWhiteSpace(criteria) ? null : JsonConvert.DeserializeObject<TransactionListCriteria>(criteria); }
+            catch (JsonException) { return BadRequest("Invalid criteria JSON."); }
+            if (filter?.UserConfigId == null) return BadRequest("criteria.userConfigId is required.");
+            if (filter.UserConfigId != CompanyId) return Forbid();
+            if (!SalesInvoiceQuery.TryParseCenters(filter.ArrayString, out var centers)) return BadRequest("criteria.arrayString must contain comma-separated positive responsibility center IDs.");
+            return Ok(await service.ListAsync(CompanyId.Value, filter, centers, pageNumber, pageSize, search, sortBy, sortDirection, status, cancellationToken));
         }
-
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<StockTransfer>> GetStockTransfer(int id)
+        public async Task<ActionResult<StockTransferDetailDto>> GetStockTransfer(int id, CancellationToken cancellationToken = default)
         {
-            var result = await _context.StockTransfers.Where(e => e.Id == id)
-                .Include(e => e.StockTransferDetails).ThenInclude(e => e.Item).ThenInclude(e => e.InventoryAccount).ThenInclude(a => a.Category)
-                .Include(e => e.FromInventoryLocation)
-                .Include(e => e.ToInventoryLocation)
-                .SingleOrDefaultAsync();
-
-            if (result == null)
-            {
-                return NotFound();
-            }
-            return result;
+            if (!CompanyId.HasValue) return Unauthorized();
+            var result = await service.GetAsync(CompanyId.Value, id, cancellationToken);
+            return result == null ? NotFound() : result;
         }
-
-
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutStockTransfer(int id, StockTransfer stockTransfer)
+        public async Task<IActionResult> PutStockTransfer(int id, StockTransferUpdateRequest request)
         {
-            if (id != stockTransfer.Id)
-            {
-                return BadRequest();
-            }
+            var stockTransfer = TransactionWriteMapping.Map(request);
+            if (!CompanyId.HasValue) return Unauthorized();
+            if (stockTransfer.UserConfigId != CompanyId) return Forbid();
+            if (id != stockTransfer.Id) return BadRequest();
+            if (!await _context.StockTransfers.AnyAsync(e => e.Id == id && e.UserConfigId == CompanyId.Value)) return NotFound();
+            var validationError = await service.ValidateWriteAsync(CompanyId.Value, id, stockTransfer, HttpContext.RequestAborted);
+            if (validationError != null) return BadRequest(validationError);
+            foreach (var line in stockTransfer.StockTransferDetails) line.StockTransferId = id;
 
             var j = await _context.StockTransfers.FirstOrDefaultAsync(e => e.ReferenceNo == stockTransfer.ReferenceNo && e.UserConfigId == stockTransfer.UserConfigId && e.Id != id);
             if (j != null)
@@ -164,8 +128,14 @@ namespace negosuite_api.Controllers
 
 
         [HttpPost]
-        public async Task<ActionResult<StockTransfer>> PostStockTransfer(StockTransfer stockTransfer)
+        public async Task<ActionResult<StockTransferDetailDto>> PostStockTransfer(StockTransferCreateRequest request)
         {
+            var stockTransfer = TransactionWriteMapping.Map(request);
+            if (!CompanyId.HasValue) return Unauthorized();
+            if (stockTransfer.UserConfigId != CompanyId) return Forbid();
+            if (stockTransfer.Id != 0) return BadRequest("New transaction ID must be zero or omitted.");
+            var validationError = await service.ValidateWriteAsync(CompanyId.Value, null, stockTransfer, HttpContext.RequestAborted);
+            if (validationError != null) return BadRequest(validationError);
             var j = await _context.StockTransfers.FirstOrDefaultAsync(e => e.ReferenceNo == stockTransfer.ReferenceNo && e.UserConfigId == stockTransfer.UserConfigId);
             if (j != null)
             {
@@ -183,14 +153,15 @@ namespace negosuite_api.Controllers
             _context.StockTransfers.Add(stockTransfer);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetStockTransfer", new { id = stockTransfer.Id }, stockTransfer);
+            return CreatedAtAction("GetStockTransfer", new { id = stockTransfer.Id }, new TransactionResponseMapping().Map(stockTransfer));
         }
 
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteStockTransfer(int id)
         {
-            var stockTransfer = await _context.StockTransfers.Where(e => e.Id == id)
+            if (!CompanyId.HasValue) return Unauthorized();
+            var stockTransfer = await _context.StockTransfers.Where(e => e.Id == id && e.UserConfigId == CompanyId.Value)
                 .Include(e => e.StockTransferDetails)
                 .SingleOrDefaultAsync();
 
@@ -228,27 +199,9 @@ namespace negosuite_api.Controllers
 
         private bool StockTransferExists(int id)
         {
-            return _context.StockTransfers.Any(e => e.Id == id);
+            return _context.StockTransfers.Any(e => e.Id == id && e.UserConfigId == CompanyId.Value);
         }
 
-
-        private static string GetStatusName(SPStockTransfer transfer)
-        {
-            string status = "";
-            switch (transfer.Status)
-            {
-                case -1:
-                    status = "Deleted";
-                    break;
-                case 0:
-                    status = "Draft";
-                    break;
-                case 1:
-                    status = "Posted";
-                    break;
-            }
-            return status;
-        }
 
     }
 }

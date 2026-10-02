@@ -1,109 +1,39 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using negosuite_api.Contracts.Administration;
+using negosuite_api.Contracts.ReferenceData;
 using negosuite_api.Models;
+using negosuite_api.Services;
 
-namespace negosuite_api.Controllers
+namespace negosuite_api.Controllers;
+
+[Authorize, ApiController, Route("api/payment-terms")]
+[TypeFilter(typeof(AuthenticatedUserFilter)), TypeFilter(typeof(AdministrationExceptionFilter))]
+public class PaymentTermsController : ControllerBase
 {
-    [Authorize]
-    [Route("api/payment-terms")]
-    [ApiController]
-    public class PaymentTermsController : ControllerBase
-    {
-        private readonly negosuiteContext _context;
+    private readonly PaymentTermService service;
+    public PaymentTermsController(PaymentTermService service) => this.service = service;
+    private User Actor => (User)HttpContext.Items[CompanyAccessService.ActorKey];
 
-        public PaymentTermsController(negosuiteContext context)
-        {
-            _context = context;
-        }
+    [HttpGet]
+    public async Task<ActionResult> GetList([FromQuery] AdministrationListOptions options, [FromQuery] ReferenceDataFilter filter, CancellationToken ct) =>
+        Ok(await service.ListAsync(options, filter, ct));
 
-        // GET: api/PaymentTerms
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<PaymentTerm>>> GetPaymentTerm()
-        {
-            return await _context.PaymentTerms.ToListAsync();
-        }
+    [HttpGet("{id}")]
+    public async Task<ActionResult<PaymentTermDetailDto>> GetPaymentTerm(int id, CancellationToken ct)
+    { var value = await service.GetAsync(id, ct); return value == null ? NotFound() : value; }
 
-        // GET: api/PaymentTerms/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<PaymentTerm>> GetPaymentTerm(int id)
-        {
-            var paymentTerm = await _context.PaymentTerms.FindAsync(id);
+    [HttpPost]
+    public async Task<ActionResult<PaymentTermDetailDto>> PostPaymentTerm(PaymentTermCreateRequest input, CancellationToken ct)
+    { var value = await service.SaveAsync(Actor, null, input, ct); return CreatedAtAction(nameof(GetPaymentTerm), new { id = value.Id }, value); }
 
-            if (paymentTerm == null)
-            {
-                return NotFound();
-            }
+    [HttpPut("{id}")]
+    public async Task<IActionResult> PutPaymentTerm(int id, PaymentTermUpdateRequest input, CancellationToken ct)
+    { await service.SaveAsync(Actor, id, input, ct); return NoContent(); }
 
-            return paymentTerm;
-        }
-
-        // PUT: api/PaymentTerms/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutPaymentTerm(int id, PaymentTerm paymentTerm)
-        {
-            if (id != paymentTerm.Id)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(paymentTerm).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!PaymentTermExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return NoContent();
-        }
-
-        // POST: api/PaymentTerms
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
-        public async Task<ActionResult<PaymentTerm>> PostPaymentTerm(PaymentTerm paymentTerm)
-        {
-            _context.PaymentTerms.Add(paymentTerm);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction("GetPaymentTerm", new { id = paymentTerm.Id }, paymentTerm);
-        }
-
-        // DELETE: api/PaymentTerms/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeletePaymentTerm(int id)
-        {
-            var paymentTerm = await _context.PaymentTerms.FindAsync(id);
-            if (paymentTerm == null)
-            {
-                return NotFound();
-            }
-
-            _context.PaymentTerms.Remove(paymentTerm);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
-        }
-
-        private bool PaymentTermExists(int id)
-        {
-            return _context.PaymentTerms.Any(e => e.Id == id);
-        }
-    }
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeletePaymentTerm(int id, CancellationToken ct)
+    { await service.DeleteAsync(id, ct); return NoContent(); }
 }
