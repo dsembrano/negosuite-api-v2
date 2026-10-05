@@ -141,7 +141,7 @@ public class BillPaymentTests
     {
         await using var f = await Fixture.Start();
         var invoice = new Bill { UserConfigId = f.Company.Id, SupplierId = f.Supplier.Id, BillNo = "BILL-TARGET", BillDate = DateTime.Today, DueDate = DateTime.Today, Amount = 100, Balance = 100, Status = 1 };
-        var invoiceJournal = new JournalEntry { UserConfigId = f.Company.Id, AccountId = f.Account.Id, ReferenceNo = invoice.BillNo, JournalDate = DateTime.Today, Nature = "D", Source = "SI", Amount = 100, Balance = 100, Status = 1 };
+        var invoiceJournal = new JournalEntry { UserConfigId = f.Company.Id, AccountId = f.Account.Id, ReferenceNo = invoice.BillNo, JournalDate = DateTime.Today, Nature = "C", Source = "PU", Amount = 100, Balance = 100, Status = 1 };
         invoice.JournalEntries.Add(invoiceJournal); f.Db.Bills.Add(invoice);
         var foreignTarget = new JournalEntry { UserConfigId = f.Other.Id, AccountId = f.ForeignAccount.Id, ReferenceNo = "FOREIGN", JournalDate = DateTime.Today, Nature = "D", Source = "GJ", Amount = 100, Balance = 100, Status = 1 };
         f.Db.JournalEntries.Add(foreignTarget); await f.Db.SaveChangesAsync();
@@ -154,12 +154,12 @@ public class BillPaymentTests
             JournalDate = DateTime.Today,
             Amount = amount,
             Balance = amount,
-            Nature = "C",
-            Source = "SIP",
+            Nature = "D",
+            Source = "PA",
             Status = 1,
             PaymentToJournalEntryId = target
         };
-        Payment Payment(string number) => new()
+        Payment Payment(string number) => FixtureJournals.Balance(new Payment()
         {
             UserConfigId = f.Company.Id,
             SupplierId = f.Supplier.Id,
@@ -171,7 +171,7 @@ public class BillPaymentTests
             PaymentModeId = f.Mode.Id,
             PaidThroughAccountId = f.Account.Id,
             JournalEntries = new List<JournalEntry> { Allocation(40, invoiceJournal.Id) }
-        };
+        });
         var invalid = Payment("Invalid"); invalid.JournalEntries.Add(Allocation(10, foreignTarget.Id));
         Assert.Equal(HttpStatusCode.BadRequest, (await f.Host.Client.PostAsJsonAsync(path, invalid)).StatusCode);
         Assert.Equal(100m, await f.Db.Bills.AsNoTracking().Where(i => i.Id == invoice.Id).Select(i => i.Balance).SingleAsync());
@@ -182,8 +182,9 @@ public class BillPaymentTests
         Assert.Equal(60m, await f.Db.Bills.AsNoTracking().Where(i => i.Id == invoice.Id).Select(i => i.Balance).SingleAsync());
 
 
-        var journal = Assert.Single(saved.JournalEntries); journal.Deleted = true;
+        var journal = Assert.Single(FixtureJournals.Business(saved.JournalEntries)); journal.Deleted = true;
         saved.JournalEntries.Add(Allocation(25.55m, invoiceJournal.Id)); saved.Balance = 74.45m;
+        FixtureJournals.Balance(saved);
         var updated = await f.Host.Client.PutAsJsonAsync($"{path}/{saved.Id}", saved);
         Assert.True(updated.StatusCode == HttpStatusCode.NoContent, await updated.Content.ReadAsStringAsync());
         Assert.Equal(74.45m, await f.Db.Bills.AsNoTracking().Where(i => i.Id == invoice.Id).Select(i => i.Balance).SingleAsync());
@@ -191,10 +192,12 @@ public class BillPaymentTests
         // Fetch includes the linked invoice journal; a normal write submits scalar fields only.
         saved = await f.Host.Client.GetFromJsonAsync<Payment>($"/api/payments/{saved.Id}");
         saved.Supplier = null; saved.PaymentMode = null; saved.PaidThroughAccount = null;
-        journal = Assert.Single(saved.JournalEntries); journal.Account = null; journal.PaymentToJournalEntry = null;
+        journal = Assert.Single(FixtureJournals.Business(saved.JournalEntries)); journal.Account = null; journal.PaymentToJournalEntry = null;
         journal.PaymentToJournalEntryId = foreignTarget.Id;
         Assert.Equal(HttpStatusCode.BadRequest, (await f.Host.Client.PutAsJsonAsync($"{path}/{saved.Id}", saved)).StatusCode);
         journal.PaymentToJournalEntryId = invoiceJournal.Id; journal.Deleted = true; saved.Balance = 100;
+        var unapplied = Allocation(0, invoiceJournal.Id); unapplied.PaymentToJournalEntryId = null; unapplied.Amount = unapplied.Balance = 100;
+        saved.JournalEntries.Add(unapplied); FixtureJournals.Balance(saved);
         var reversed = await f.Host.Client.PutAsJsonAsync($"{path}/{saved.Id}", saved);
         Assert.True(reversed.StatusCode == HttpStatusCode.NoContent, await reversed.Content.ReadAsStringAsync());
         Assert.Equal(100m, await f.Db.Bills.AsNoTracking().Where(i => i.Id == invoice.Id).Select(i => i.Balance).SingleAsync());
@@ -215,7 +218,7 @@ public class BillPaymentTests
     {
         await using var f = await Fixture.Start();
         const string path = "/api/bills";
-        Bill NewBill(string number) => new()
+        Bill NewBill(string number) => FixtureJournals.Balance(new Bill()
         {
             UserConfigId = f.Company.Id,
             SupplierId = f.Supplier.Id,
@@ -228,14 +231,14 @@ public class BillPaymentTests
             BillDetails = new List<BillDetail> { new() { ItemId = f.Item.Id, Quantity = 10, Rate = 10, Amount = 100, LandedCost = 20, Status = 1 } },
             JournalEntries = new List<JournalEntry> { new() { UserConfigId = f.Company.Id, AccountId = f.Account.Id,
                 ReferenceNo = number, Nature = "C", Source = "BILL", Amount = 100.125m, Balance = 100.125m, Status = 1 } }
-        };
+        });
         var invalid = NewBill("Invalid"); invalid.BillDetails.First().Quantity = 0;
         Assert.Equal(HttpStatusCode.BadRequest, (await f.Host.Client.PostAsJsonAsync(path, invalid)).StatusCode);
         Assert.False(await f.Db.Bills.AnyAsync());
         var response = await f.Host.Client.PostAsJsonAsync(path, NewBill("BILL-1"));
         Assert.True(response.StatusCode == HttpStatusCode.Created, await response.Content.ReadAsStringAsync());
         var saved = await response.Content.ReadFromJsonAsync<Bill>();
-        Assert.Equal(100.12m, Assert.Single(saved.JournalEntries).Amount);
+        Assert.Equal(100.12m, Assert.Single(FixtureJournals.Business(saved.JournalEntries)).Amount);
         async Task AssertCost(decimal expected)
         {
             var item = await f.Db.Items.AsNoTracking().SingleAsync(i => i.Id == f.Item.Id);
@@ -246,25 +249,33 @@ public class BillPaymentTests
         var secondResponse = await f.Host.Client.PostAsJsonAsync(path, NewBill("BILL-2"));
         Assert.Equal(HttpStatusCode.Created, secondResponse.StatusCode);
         var second = await secondResponse.Content.ReadFromJsonAsync<Bill>();
-        var detail = Assert.Single(saved.BillDetails); var journal = Assert.Single(saved.JournalEntries);
+        var detail = Assert.Single(saved.BillDetails); var ownJournals = saved.JournalEntries; var journal = Assert.Single(FixtureJournals.Business(saved.JournalEntries));
         saved.BillDetails = second.BillDetails;
         Assert.Equal(HttpStatusCode.BadRequest, (await f.Host.Client.PutAsJsonAsync($"{path}/{saved.Id}", saved)).StatusCode);
         saved.BillDetails = new List<BillDetail> { detail }; saved.JournalEntries = second.JournalEntries;
         Assert.Equal(HttpStatusCode.BadRequest, (await f.Host.Client.PutAsJsonAsync($"{path}/{saved.Id}", saved)).StatusCode);
-        saved.JournalEntries = new List<JournalEntry> { journal }; saved.SupplierId = f.ForeignSupplier.Id;
+        saved.JournalEntries = ownJournals; saved.SupplierId = f.ForeignSupplier.Id;
         Assert.Equal(HttpStatusCode.BadRequest, (await f.Host.Client.PutAsJsonAsync($"{path}/{saved.Id}", saved)).StatusCode);
         saved.SupplierId = f.Supplier.Id; saved.UserConfigId = f.Other.Id;
         Assert.Equal(HttpStatusCode.Forbidden, (await f.Host.Client.PutAsJsonAsync($"{path}/{saved.Id}", saved)).StatusCode);
         saved.UserConfigId = f.Company.Id;
         detail.Quantity = 20; detail.LandedCost = 40; detail.Touched = true;
+        FixtureJournals.Balance(saved);
         var updated = await f.Host.Client.PutAsJsonAsync($"{path}/{saved.Id}", saved);
         Assert.True(updated.StatusCode == HttpStatusCode.NoContent, await updated.Content.ReadAsStringAsync());
         await AssertCost(12);
         Assert.Equal(20m, await f.Db.BillDetails.Where(d => d.Id == detail.Id).Select(d => d.Quantity).SingleAsync());
+        saved = await f.Host.Client.GetFromJsonAsync<Bill>($"{path}/{saved.Id}");
         saved.Balance = 50;
         Assert.Equal(HttpStatusCode.NoContent, (await f.Host.Client.PutAsJsonAsync($"{path}/{saved.Id}", saved)).StatusCode);
+        Assert.Equal(100m, await f.Db.Bills.AsNoTracking().Where(b => b.Id == saved.Id).Select(b => b.Balance).SingleAsync());
+        await f.Db.Bills.Where(b => b.Id == saved.Id).ExecuteUpdateAsync(x => x.SetProperty(b => b.Balance, 50));
         Assert.Equal(HttpStatusCode.BadRequest, (await f.Host.Client.DeleteAsync($"{path}/{saved.Id}")).StatusCode);
-        saved.Balance = 100; detail.Deleted = true; journal.Deleted = true;
+        await f.Db.Bills.Where(b => b.Id == saved.Id).ExecuteUpdateAsync(x => x.SetProperty(b => b.Balance, 100));
+        saved = await f.Host.Client.GetFromJsonAsync<Bill>($"{path}/{saved.Id}");
+        saved.Status = 0;
+        foreach (var line in saved.BillDetails) line.Deleted = true;
+        foreach (var entry in saved.JournalEntries) entry.Deleted = true;
         Assert.Equal(HttpStatusCode.NoContent, (await f.Host.Client.PutAsJsonAsync($"{path}/{saved.Id}", saved)).StatusCode);
         Assert.False(await f.Db.BillDetails.AnyAsync(d => d.Id == detail.Id)); Assert.False(await f.Db.JournalEntries.AnyAsync(j => j.Id == journal.Id));
         Assert.Equal(HttpStatusCode.NoContent, (await f.Host.Client.DeleteAsync($"{path}/{saved.Id}")).StatusCode);
@@ -281,7 +292,7 @@ public class BillPaymentTests
         await using var f = await Fixture.Start();
         const string path = "/api/payments";
         Assert.Equal(HttpStatusCode.NotFound, (await f.Host.Client.GetAsync(path + "/99999")).StatusCode);
-        Payment NewPayment(string number) => new()
+        Payment NewPayment(string number) => FixtureJournals.Balance(new Payment()
         {
             UserConfigId = f.Company.Id,
             SupplierId = f.Supplier.Id,
@@ -292,11 +303,11 @@ public class BillPaymentTests
             Status = 1,
             JournalEntries = new List<JournalEntry> { new() { UserConfigId = f.Company.Id, AccountId = f.Account.Id,
                 ReferenceNo = number, Nature = "D", Source = "PAY", Amount = 10.125m, Status = 1 } }
-        };
+        });
         var response = await f.Host.Client.PostAsJsonAsync(path, NewPayment("OTHER-1"));
         Assert.True(response.StatusCode == HttpStatusCode.Created, await response.Content.ReadAsStringAsync());
         var saved = await response.Content.ReadFromJsonAsync<Payment>();
-        Assert.Equal(10.125m, Assert.Single(saved.JournalEntries).Amount);
+        Assert.Equal(10.125m, Assert.Single(FixtureJournals.Business(saved.JournalEntries)).Amount);
         Assert.Equal(HttpStatusCode.Conflict, (await f.Host.Client.PostAsJsonAsync(path, NewPayment("OTHER-1"))).StatusCode);
         saved.Notes = "Updated";
         Assert.Equal(HttpStatusCode.NoContent, (await f.Host.Client.PutAsJsonAsync($"{path}/{saved.Id}", saved)).StatusCode);
@@ -321,6 +332,7 @@ public class BillPaymentTests
                 Item = new Item { UserConfigId = f.Company.Id, Name = "Unwanted item" } } }, JournalEntries = new List<JournalEntry> { journal } }
             : new Payment { UserConfigId = f.Company.Id, SupplierId = f.Supplier.Id, Supplier = supplier, ReferenceNo = "DTO-1",
                 ReferenceDate = DateTime.Today, Status = 1, Amount = 10, Balance = 10, JournalEntries = new List<JournalEntry> { journal } };
+        FixtureJournals.Balance(request);
         var response = await f.Host.Client.PostAsJsonAsync(path, request);
         Assert.True(response.StatusCode == HttpStatusCode.Created, await response.Content.ReadAsStringAsync());
         var created = await response.Content.ReadFromJsonAsync<JsonElement>();

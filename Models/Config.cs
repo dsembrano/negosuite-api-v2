@@ -117,37 +117,26 @@ namespace negosuite_api.Models
         public String AutoPOSReferenceNoPrefix { get; set; }
 
         public static string getFormattedSequenceNo(int sequence, string format)
+            => getFormattedSequenceNo(sequence, format, DateTime.Now);
+
+        // Date is explicit for deterministic verification. Allocation and reset policy remain with the caller.
+        public static string getFormattedSequenceNo(int sequence, string format, DateTime date)
         {
-            /*
-             {format: '######', description: '###### (001234)'},
-             {format: 'YYYYMMDD-######', description: 'YYYYMMDD-###### (20240710-001234)'},
-             {format: 'YYYYMM-######', description: 'YYYYMM-###### (202407-001234)'},
-             {format: 'YYYY-######', description: 'YYYY-###### (2024-001234)'},
-            */
-
-            var formattedSequence = $"{sequence:D8}";
-            var periodString = "";
-
-            switch (format)
+            var culture = System.Globalization.CultureInfo.InvariantCulture;
+            var sixDigits = sequence.ToString("D6", culture);
+            var eightDigits = sequence.ToString("D8", culture);
+            return format switch
             {
-                case "########":
-                    formattedSequence = $"{sequence:D8}";
-                    break;
-                case "YYYYMMDD-########":
-                    periodString = DateTime.Now.ToString("yyyyMMdd");
-                    formattedSequence = $"{periodString}-{sequence:D8}";
-                    break;
-                case "YYYYMM-########":
-                    periodString = DateTime.Now.ToString("yyyyMM");
-                    formattedSequence = $"{periodString}-{sequence:D8}";
-                    break;
-                case "YYYY-########":
-                    periodString = DateTime.Now.ToString("yyyy");
-                    formattedSequence = $"{periodString}-{sequence:D8}";
-                    break;
-            }
-
-            return formattedSequence;
+                "######" => sixDigits,
+                "YYYY-######" => date.ToString("yyyy", culture) + "-" + sixDigits,
+                "YYYY-########" => date.ToString("yyyy", culture) + "-" + eightDigits,
+                "YYYY-MM-######" => date.ToString("yyyy-MM", culture) + "-" + sixDigits,
+                "YYYYMM-########" => date.ToString("yyyyMM", culture) + "-" + eightDigits,
+                "YYMM-######" => date.ToString("yyMM", culture) + "-" + sixDigits,
+                "YYYYMMDD-########" => date.ToString("yyyyMMdd", culture) + "-" + eightDigits,
+                // Includes ########, missing/empty legacy settings, and unknown legacy formats.
+                _ => eightDigits
+            };
         }
 
     }

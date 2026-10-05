@@ -1,0 +1,25 @@
+-- Apply after 002. Preserves the installed v1/v2 view definitions in named base views.
+-- Existing views must match the verified column contracts; unknown layouts fail explicitly.
+-- The base views are required dependencies, not temporary tables. Do not drop them.
+DELIMITER $$
+DROP PROCEDURE IF EXISTS InstallSalesReturnViews$$
+CREATE PROCEDURE InstallSalesReturnViews()
+BEGIN
+ IF NOT EXISTS(SELECT 1 FROM information_schema.VIEWS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='inventorytransaction') THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Required inventorytransaction view is missing'; END IF;
+ IF (SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='inventorytransaction') <> 'UserConfigId,ReferenceNo,ReferenceDate,CustomerId,CustomerName,SupplierId,SupplierName,DetailId,ItemId,ItemName,ItemCost,AverageCost,ItemReorderPoint,LastPurchasedDate,Quantity,QuantityIn,QuantityOut,Rate,Amount,Status,Source,SourceName,TransactionType,InventoryLocationId,InventoryLocationName,Notes,ResponsibilityCenterEntry' THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Unexpected inventorytransaction column contract; review before migration'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM information_schema.VIEWS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='inventorytransaction_before_salesreturn') THEN
+ SELECT CONCAT('CREATE VIEW inventorytransaction_before_salesreturn AS ',VIEW_DEFINITION) INTO @srt_view_sql FROM information_schema.VIEWS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='inventorytransaction';
+ PREPARE srt_view_stmt FROM @srt_view_sql; EXECUTE srt_view_stmt; DEALLOCATE PREPARE srt_view_stmt; END IF;
+ SET @srt_view_sql='CREATE OR REPLACE VIEW inventorytransaction AS SELECT * FROM inventorytransaction_before_salesreturn UNION ALL SELECT r.UserConfigId,r.ReferenceNo,r.ReferenceDate,r.CustomerId,c.Name AS CustomerName,NULL AS SupplierId,'''' AS SupplierName,d.Id AS DetailId,d.ItemId,d.ItemName,i.Cost AS ItemCost,i.AverageCost,i.ReorderPoint AS ItemReorderPoint,i.LastPurchasedDate,d.Quantity,d.Quantity AS QuantityIn,0 AS QuantityOut,d.Cost AS Rate,d.Quantity*d.Cost AS Amount,r.Status,''SRT'' AS Source,''Sales Return'' AS SourceName,''IN'' AS TransactionType,r.InventoryLocationId,l.Name AS InventoryLocationName,d.Notes,r.ResponsibilityCenterEntry FROM salesreturn r JOIN salesreturndetail d ON d.SalesReturnId=r.Id JOIN customer c ON c.Id=r.CustomerId JOIN item i ON i.Id=d.ItemId JOIN inventorylocation l ON l.Id=r.InventoryLocationId WHERE r.Status=1 AND d.IsInventoryTransaction=1';
+ PREPARE srt_view_stmt FROM @srt_view_sql; EXECUTE srt_view_stmt; DEALLOCATE PREPARE srt_view_stmt;
+ IF NOT EXISTS(SELECT 1 FROM information_schema.VIEWS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='salestransaction') THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Required salestransaction view is missing'; END IF;
+ IF (SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='salestransaction') <> 'SourceId,UserConfigId,ReferenceNo,ReferenceDate,CustomerId,CustomerName,DiscountPercent,DiscountAmount,Cost,Amount,Balance,Taxes,TaxAmount,Source,SourceName,ResponsibilityCenterEntry,Status' THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Unexpected salestransaction column contract; review before migration'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM information_schema.VIEWS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='salestransaction_before_salesreturn') THEN
+ SELECT CONCAT('CREATE VIEW salestransaction_before_salesreturn AS ',VIEW_DEFINITION) INTO @srt_view_sql FROM information_schema.VIEWS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='salestransaction';
+ PREPARE srt_view_stmt FROM @srt_view_sql; EXECUTE srt_view_stmt; DEALLOCATE PREPARE srt_view_stmt; END IF;
+ SET @srt_view_sql='CREATE OR REPLACE VIEW salestransaction AS SELECT * FROM salestransaction_before_salesreturn UNION ALL SELECT CONCAT(''SRT-'',r.Id) AS SourceId,r.UserConfigId,r.ReferenceNo,r.ReferenceDate,r.CustomerId,c.Name AS CustomerName,NULL AS DiscountPercent,-r.DiscountAmount AS DiscountAmount,-COALESCE((SELECT SUM(d.Cost*d.Quantity) FROM salesreturndetail d WHERE d.SalesReturnId=r.Id),0) AS Cost,-r.Amount AS Amount,-IF(r.Status=1,(SELECT COALESCE(SUM(j.Balance),0) FROM journalentry j WHERE j.SalesReturnId=r.Id AND j.Status=1 AND j.Nature=''C'' AND j.AccountId=r.ReceivableAccountId AND j.PaymentToJournalEntryId IS NULL),r.Balance) AS Balance,COALESCE((SELECT JSON_ARRAYAGG(JSON_OBJECT(''taxRate'',t.taxRate,''amount'',-t.amount)) FROM JSON_TABLE(r.Taxes,''$[*]'' COLUMNS(taxRate JSON PATH ''$.taxRate'',amount DECIMAL(20,4) PATH ''$.amount'')) t),JSON_ARRAY()) AS Taxes,-r.TaxAmount AS TaxAmount,''SRT'' AS Source,''Sales Return'' AS SourceName,r.ResponsibilityCenterEntry,r.Status FROM salesreturn r JOIN customer c ON c.Id=r.CustomerId WHERE r.Status=1';
+ PREPARE srt_view_stmt FROM @srt_view_sql; EXECUTE srt_view_stmt; DEALLOCATE PREPARE srt_view_stmt;
+END$$
+CALL InstallSalesReturnViews()$$
+DROP PROCEDURE InstallSalesReturnViews$$
+DELIMITER ;

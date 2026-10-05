@@ -1,3 +1,4 @@
+using negosuite_api.Services;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net;
 using System.Net.Http.Headers;
@@ -65,7 +66,7 @@ public class PagePreferenceTests
             var other = new Config { CompanyName = "Other preference fixture", Uuid = Guid.NewGuid().ToString() };
             var role = new UserRole { Name = "Admin", IsAdmin = true };
             db.Configs.AddRange(company, other); db.UserRoles.Add(role); await db.SaveChangesAsync();
-            User NewUser(string name) => new() { Name = name, Email = name + "@example.test", Username = name, Password = AuthController.CalculateSha256Hash("test-password"), ConfigId = company.Id, Status = true, UserRoleId = role.Id, UserUIConfig = "legacy unchanged" };
+            User NewUser(string name) => new() { Name = name, Email = name + "@example.test", Username = name, Password = PasswordSecurity.Hash("test-password"), ConfigId = company.Id, Status = true, UserRoleId = role.Id, UserUIConfig = "legacy unchanged" };
             User first = NewUser("first"), second = NewUser("second"), inactive = NewUser("inactive"), denied = NewUser("denied");
             inactive.Status = false; denied.UserRoleId = null;
             db.Users.AddRange(first, second, inactive, denied); db.AppVersions.Add(new AppVersion { Id = 1, VersionCode = "test" }); await db.SaveChangesAsync();

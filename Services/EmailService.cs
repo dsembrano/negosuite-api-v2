@@ -1,63 +1,52 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Mail;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
+using static negosuite_api.Services.AdministrationSupport;
 
-namespace negosuite_api.Services
+namespace negosuite_api.Services;
+
+public sealed record OutgoingEmail(IReadOnlyList<string> Recipients, string Subject, string HtmlBody);
+public interface IEmailService
 {
-    public class EmailService : IEmailService
+    Task SendAsync(OutgoingEmail email, CancellationToken ct);
+}
+public sealed class EmailService : IEmailService
+{
+    private readonly IConfiguration config;
+    public EmailService(IConfiguration config) => this.config = config;
+    public async Task SendAsync(OutgoingEmail email, CancellationToken ct)
     {
-        private readonly IConfiguration _config;
-
-        public EmailService(IConfiguration config)
+        if (string.IsNullOrWhiteSpace(config["Smtp:Host"]) || !int.TryParse(config["Smtp:Port"], out var port) || port < 1 || port > 65535 ||
+            !MailAddress.TryCreate(config["Smtp:FromEmail"], out var from)) throw new InvalidOperationException("SMTP is not configured.");
+        using var message = new MailMessage { From = from, Subject = email.Subject, Body = email.HtmlBody, IsBodyHtml = true };
+        foreach (var recipient in email.Recipients) message.To.Add(recipient);
+        using var client = new SmtpClient(config["Smtp:Host"], port)
         {
-            _config = config;
-        }
-
-        public void SendEmail(EmailPayload emailPayload)
+            UseDefaultCredentials = false,
+            Credentials = new NetworkCredential(config["Smtp:Username"], config["Smtp:Password"]),
+            EnableSsl = true
+        };
+        await client.SendMailAsync(message, ct);
+    }
+}
+public static class EmailValidation
+{
+    public static List<string> Recipients(List<string> recipients, bool single = false)
+    {
+        Require(recipients != null && recipients.Count > 0 && recipients.Count <= (single ? 1 : 100), single ? "Supply exactly one recipient." : "Supply 1 to 100 recipients.");
+        var result = new List<string>();
+        foreach (var raw in recipients)
         {
-            MailMessage mailMessage = new MailMessage();
-
-            emailPayload.Recipients.ForEach(recipient =>
-            {
-                mailMessage.To.Add(recipient);
-            });
-
-            mailMessage.Subject = emailPayload.Subject;
-            mailMessage.Body = emailPayload.Message;
-            mailMessage.IsBodyHtml = true;
-            mailMessage.From = new MailAddress(_config["Smtp:FromEmail"]);
-
-            SmtpClient smtpClient = new SmtpClient();
-            smtpClient.Host = _config["Smtp:Host"];
-            smtpClient.Port = int.Parse(_config["Smtp:Port"]);
-            smtpClient.UseDefaultCredentials = false;
-            smtpClient.Credentials = new NetworkCredential(
-                _config["Smtp:Username"], _config["Smtp:Password"]);
-            smtpClient.EnableSsl = true;
-            smtpClient.Send(mailMessage);
+            var value = raw?.Trim();
+            Require(!string.IsNullOrWhiteSpace(value) && value.Length <= 150 && MailAddress.TryCreate(value, out var address) &&
+                string.Equals(address.Address, value, StringComparison.OrdinalIgnoreCase) && !value.Contains('\r') && !value.Contains('\n'), "Invalid recipient email address.");
+            result.Add(value);
         }
+        return result.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
     }
-
-    public interface IEmailService
-    {
-        void SendEmail(EmailPayload emailPayload);
-    }
-
-    public class EmailPayload
-    {
-        public string Subject { get; set; }
-        public List<string> Recipients { get; set; }
-        public string Message { get; set; }
-        public string CompanyName { get; set; }
-        public string SenderName { get; set; }
-        public string RecipientName { get; set; }
-        public string Password { get; set; }
-        public string Identifier { get; set; }
-        public int? ConfigId { get; set; }
-        public int? UserRoleId { get; set; }
-        public DateTime? ExpiryDate { get; set; }
-    }
-
 }

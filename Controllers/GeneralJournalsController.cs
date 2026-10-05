@@ -18,6 +18,7 @@ namespace negosuite_api.Controllers
 {
     [Authorize]
     [TypeFilter(typeof(ConfigUuidFilter))]
+    [TypeFilter(typeof(TransactionIntegrityFilter), Order = 100)]
     [Route("api/general-journals")]
     [ApiController]
     public class GeneralJournalsController : ControllerBase
@@ -85,7 +86,7 @@ namespace negosuite_api.Controllers
             }
 
             var config = await _context.Configs.FirstOrDefaultAsync(c => c.Id == generalJournal.UserConfigId);
-            if (config == null || config.ARTradeAccountId == null)
+            if (config == null)
             {
                 return BadRequest();
             }
@@ -98,18 +99,10 @@ namespace negosuite_api.Controllers
 
                 e.JournalDate = generalJournal.ReferenceDate;
 
-                JournalEntry invoiceJE = null;
-                if (e.AccountId == config.ARTradeAccountId && e.PaymentToJournalEntryId != null)
-                {
-                    invoiceJE = await _context.JournalEntries.SingleOrDefaultAsync(j => j.Id == e.PaymentToJournalEntryId && j.UserConfigId == CompanyId.Value);
-                    if (invoiceJE == null) return BadRequest("Invoice journal entry not found.");
-                }
 
-                if (e.AccountId == config.APTradeAccountId && e.PaymentToJournalEntryId != null)
-                {
-                    invoiceJE = await _context.JournalEntries.SingleOrDefaultAsync(j => j.Id == e.PaymentToJournalEntryId && j.UserConfigId == CompanyId.Value);
-                    if (invoiceJE == null) return BadRequest("Bill journal entry not found.");
-                }
+
+
+
 
                 if (e.Id == 0)
                 {
@@ -117,30 +110,7 @@ namespace negosuite_api.Controllers
                     _context.JournalEntries.Add(e);
 
                     // Credit AR: Subtract payment amount to invoice journal entry balance
-                    if (invoiceJE != null)
-                    {
-                        invoiceJE.Balance = invoiceJE.Balance - e.Amount;
-                        invoiceJE.LastUpdatedDate = DateTime.Now;
-                        _context.Entry(invoiceJE).State = EntityState.Modified;
 
-                        if (invoiceJE.Source == "SI")
-                        {
-                            var salesInvoice = await _context.SalesInvoices.SingleOrDefaultAsync(i => i.Id == invoiceJE.SalesInvoiceId && i.UserConfigId == CompanyId.Value);
-                            if (salesInvoice == null) return BadRequest("Linked invoice not found.");
-                            salesInvoice.Balance = invoiceJE.Balance;
-                            salesInvoice.LastUpdatedDate = DateTime.Now;
-                            _context.Entry(salesInvoice).State = EntityState.Modified;
-                        }
-
-                        if (invoiceJE.Source == "PU")
-                        {
-                            var bill = await _context.Bills.SingleOrDefaultAsync(b => b.Id == invoiceJE.BillId && b.UserConfigId == CompanyId.Value);
-                            if (bill == null) return BadRequest("Linked bill not found.");
-                            bill.Balance = invoiceJE.Balance;
-                            bill.LastUpdatedDate = DateTime.Now;
-                            _context.Entry(bill).State = EntityState.Modified;
-                        }
-                    }
                 }
                 else
                 {
@@ -161,31 +131,7 @@ namespace negosuite_api.Controllers
                         _context.JournalEntries.Remove(entry);
                         e.Status = STATUS_DELETED;
 
-                        if (invoiceJE != null)
-                        {
-                            invoiceJE.Balance = invoiceJE.Balance + e.Amount;
-                            invoiceJE.LastUpdatedDate = DateTime.Now;
-                            _context.Entry(invoiceJE).State = EntityState.Modified;
 
-                            if (invoiceJE.Source == "SI")
-                            {
-                                var salesInvoice = await _context.SalesInvoices.SingleOrDefaultAsync(i => i.Id == invoiceJE.SalesInvoiceId && i.UserConfigId == CompanyId.Value);
-                                if (salesInvoice == null) return BadRequest("Linked invoice not found.");
-                                salesInvoice.Balance = invoiceJE.Balance;
-                                salesInvoice.LastUpdatedDate = DateTime.Now;
-                                _context.Entry(salesInvoice).State = EntityState.Modified;
-                            }
-
-                            if (invoiceJE.Source == "PU")
-                            {
-                                var bill = await _context.Bills.SingleOrDefaultAsync(b => b.Id == invoiceJE.BillId && b.UserConfigId == CompanyId.Value);
-                                if (bill == null) return BadRequest("Linked bill not found.");
-                                bill.Balance = invoiceJE.Balance;
-                                bill.LastUpdatedDate = DateTime.Now;
-                                _context.Entry(bill).State = EntityState.Modified;
-                            }
-
-                        }
 
                     }
                     else
@@ -236,12 +182,12 @@ namespace negosuite_api.Controllers
             }
 
             var config = await _context.Configs.FirstOrDefaultAsync(c => c.Id == generalJournal.UserConfigId);
-            if (config == null || config.ARTradeAccountId == null)
+            if (config == null)
             {
                 return BadRequest("Missing configuration for Accounts Receivable Trade.");
             }
 
-            if (config == null || config.APTradeAccountId == null)
+            if (config == null)
             {
                 return BadRequest("Missing configuration for Accounts Payable Trade.");
             }
@@ -254,44 +200,11 @@ namespace negosuite_api.Controllers
                 e.CreatedDate = DateTime.Now;
 
                 // Credit AR: Subtract payment amount to invoice balance
-                if (e.AccountId == config.ARTradeAccountId && e.PaymentToJournalEntryId != null)
-                {
-                    var invoiceJE = await _context.JournalEntries.SingleOrDefaultAsync(j => j.Id == e.PaymentToJournalEntryId && j.UserConfigId == CompanyId.Value);
-                    if (invoiceJE == null) return BadRequest("Data integrity error. Missing Sales Invoice record.");
-                    invoiceJE.Balance = invoiceJE.Balance - e.Amount;
-                    invoiceJE.LastUpdatedDate = DateTime.Now;
-                    _context.Entry(invoiceJE).State = EntityState.Modified;
 
-                    if (invoiceJE.Source == "SI")
-                    {
-                        var salesInvoice = await _context.SalesInvoices.SingleOrDefaultAsync(i => i.Id == invoiceJE.SalesInvoiceId && i.UserConfigId == CompanyId.Value);
-                        if (salesInvoice == null) return BadRequest("Linked invoice not found.");
-                        salesInvoice.Balance = invoiceJE.Balance;
-                        salesInvoice.LastUpdatedDate = DateTime.Now;
-                        _context.Entry(salesInvoice).State = EntityState.Modified;
-                    }
-                }
 
 
                 // Debit AP: Subtract payment amount to bill balance
-                if (e.AccountId == config.APTradeAccountId && e.PaymentToJournalEntryId != null)
-                {
-                    var invoiceJE = await _context.JournalEntries.SingleOrDefaultAsync(j => j.Id == e.PaymentToJournalEntryId && j.UserConfigId == CompanyId.Value);
-                    if (invoiceJE == null) return BadRequest("Data integrity error. Missing Bill record.");
-                    invoiceJE.Balance = invoiceJE.Balance - e.Amount;
-                    invoiceJE.LastUpdatedDate = DateTime.Now;
-                    _context.Entry(invoiceJE).State = EntityState.Modified;
 
-                    if (invoiceJE.Source == "PU")
-                    {
-                        var bill = await _context.Bills.SingleOrDefaultAsync(b => b.Id == invoiceJE.BillId && b.UserConfigId == CompanyId.Value);
-                        if (bill == null) return BadRequest("Linked bill not found.");
-                        bill.Balance = invoiceJE.Balance;
-                        bill.LastUpdatedDate = DateTime.Now;
-                        _context.Entry(bill).State = EntityState.Modified;
-                    }
-
-                }
 
             }
 
@@ -318,11 +231,11 @@ namespace negosuite_api.Controllers
             var validationError = await new TransactionWriteValidator(_context).TargetsAsync(CompanyId.Value, generalJournal.JournalEntries.Where(j => j.Status != -1), HttpContext.RequestAborted);
             if (validationError != null) return BadRequest(validationError);
             var config = await _context.Configs.FirstOrDefaultAsync(c => c.Id == generalJournal.UserConfigId);
-            if (config == null || config.ARTradeAccountId == null)
+            if (config == null)
             {
                 return BadRequest("Missing configuration for Accounts Receivable Trade.");
             }
-            if (config == null || config.APTradeAccountId == null)
+            if (config == null)
             {
                 return BadRequest("Missing configuration for Accounts Payable Trade.");
             }
@@ -344,44 +257,12 @@ namespace negosuite_api.Controllers
 
                 e.Status = STATUS_DELETED;
 
-                JournalEntry invoiceJE = null;
-                if (e.AccountId == config.ARTradeAccountId && e.PaymentToJournalEntryId != null)
-                {
-                    invoiceJE = await _context.JournalEntries.SingleOrDefaultAsync(j => j.Id == e.PaymentToJournalEntryId && j.UserConfigId == CompanyId.Value);
-                    if (invoiceJE == null) return BadRequest("Invoice journal entry not found.");
-                }
 
-                if (e.AccountId == config.APTradeAccountId && e.PaymentToJournalEntryId != null)
-                {
-                    invoiceJE = await _context.JournalEntries.SingleOrDefaultAsync(j => j.Id == e.PaymentToJournalEntryId && j.UserConfigId == CompanyId.Value);
-                    if (invoiceJE == null) return BadRequest("Bill journal entry not found.");
-                }
 
-                if (invoiceJE != null)
-                {
-                    invoiceJE.Balance = invoiceJE.Balance + e.Amount;
-                    invoiceJE.LastUpdatedDate = DateTime.Now;
-                    _context.Entry(invoiceJE).State = EntityState.Modified;
 
-                    if (invoiceJE.Source == "SI")
-                    {
-                        var salesInvoice = await _context.SalesInvoices.SingleOrDefaultAsync(i => i.Id == invoiceJE.SalesInvoiceId && i.UserConfigId == CompanyId.Value);
-                        if (salesInvoice == null) return BadRequest("Linked invoice not found.");
-                        salesInvoice.Balance = invoiceJE.Balance;
-                        salesInvoice.LastUpdatedDate = DateTime.Now;
-                        _context.Entry(salesInvoice).State = EntityState.Modified;
-                    }
 
-                    if (invoiceJE.Source == "PU")
-                    {
-                        var bill = await _context.Bills.SingleOrDefaultAsync(b => b.Id == invoiceJE.BillId && b.UserConfigId == CompanyId.Value);
-                        if (bill == null) return BadRequest("Linked bill not found.");
-                        bill.Balance = invoiceJE.Balance;
-                        bill.LastUpdatedDate = DateTime.Now;
-                        _context.Entry(bill).State = EntityState.Modified;
-                    }
 
-                }
+
 
                 //e.LastUpdatedDate = DateTime.Now;
                 //_context.Entry(e).State = EntityState.Modified;

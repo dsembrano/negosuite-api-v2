@@ -36,11 +36,11 @@ public class OtherTransactionTests
         bill.JournalEntries.Add(billEntry); f.Db.Bills.Add(bill);
         var foreign = new JournalEntry { UserConfigId = f.Other.Id, AccountId = f.ForeignAccount.Id, ReferenceNo = "FOREIGN", JournalDate = DateTime.Today, Source = "GJ", Nature = "D", Amount = 100, Balance = 100, Status = 1 };
         f.Db.JournalEntries.Add(foreign); await f.Db.SaveChangesAsync();
-        GeneralJournal NewJournal(string number) => new() { UserConfigId = f.Company.Id, ReferenceNo = number, ReferenceDate = DateTime.Today, Status = 1,
+        GeneralJournal NewJournal(string number) => FixtureJournals.Balance(new GeneralJournal() { UserConfigId = f.Company.Id, ReferenceNo = number, ReferenceDate = DateTime.Today, Status = 1,
             JournalEntries = new List<JournalEntry> {
-                new() { UserConfigId = f.Company.Id, AccountId = seed.Receivable.Id, ReferenceNo = number, Nature = "C", Source = "GJ", Amount = 40, Status = 1, PaymentToJournalEntryId = invoiceEntry.Id },
-                new() { UserConfigId = f.Company.Id, AccountId = f.Account.Id, ReferenceNo = number, Nature = "D", Source = "GJ", Amount = 30, Status = 1, PaymentToJournalEntryId = billEntry.Id } } };
-        var invalid = NewJournal("INVALID"); invalid.JournalEntries.Last().PaymentToJournalEntryId = foreign.Id;
+                new() { UserConfigId = f.Company.Id, AccountId = seed.Receivable.Id, CustomerId = seed.Customer.Id, ReferenceNo = number, Nature = "C", Source = "GJ", Amount = 40, Status = 1, PaymentToJournalEntryId = invoiceEntry.Id },
+                new() { UserConfigId = f.Company.Id, AccountId = f.Account.Id, SupplierId = f.Supplier.Id, ReferenceNo = number, Nature = "D", Source = "GJ", Amount = 30, Status = 1, PaymentToJournalEntryId = billEntry.Id } } });
+        var invalid = NewJournal("INVALID"); invalid.JournalEntries.Single(j => j.PaymentToJournalEntryId == billEntry.Id).PaymentToJournalEntryId = foreign.Id;
         Assert.Equal(HttpStatusCode.BadRequest, (await f.Host.Client.PostAsJsonAsync("/api/general-journals", invalid)).StatusCode);
         Assert.Equal(100m, await f.Db.SalesInvoices.AsNoTracking().Where(i => i.Id == invoice.Id).Select(i => i.Balance).SingleAsync());
         Assert.False(await f.Db.GeneralJournals.AnyAsync());
@@ -53,7 +53,7 @@ public class OtherTransactionTests
         Assert.Equal(100m, await f.Db.SalesInvoices.AsNoTracking().Where(i => i.Id == invoice.Id).Select(i => i.Balance).SingleAsync());
         Assert.Equal(100m, await f.Db.Bills.AsNoTracking().Where(b => b.Id == bill.Id).Select(b => b.Balance).SingleAsync());
         var protectedJournal = NewJournal("PROTECTED"); protectedJournal.JournalEntries = new List<JournalEntry> { new() { UserConfigId = f.Company.Id, AccountId = seed.Receivable.Id, ReferenceNo = "PROTECTED", Nature = "D", Source = "GJ", Amount = 100, Balance = 60, Status = 1 } };
-        saved = await (await f.Host.Client.PostAsJsonAsync("/api/general-journals", protectedJournal)).Content.ReadFromJsonAsync<GeneralJournal>();
+        f.Db.GeneralJournals.Add(protectedJournal); await f.Db.SaveChangesAsync(); saved = protectedJournal;
         Assert.Equal(HttpStatusCode.BadRequest, (await f.Host.Client.DeleteAsync("/api/general-journals/" + saved.Id)).StatusCode);
     }
 
@@ -95,6 +95,7 @@ public class OtherTransactionTests
     {
         var journals = new List<JournalEntry> { new() { UserConfigId = f.Company.Id, AccountId = f.Account.Id, ReferenceNo = reference,
             JournalDate = DateTime.Today, Nature = "D", Source = "TEST", Amount = 10.125m, Balance = 10.125m, Status = status } };
+        FixtureJournals.Balance(new GeneralJournal { JournalEntries = journals });
         return module switch
         {
             "general-journals" => new GeneralJournal { UserConfigId = f.Company.Id, ReferenceNo = reference, ReferenceDate = DateTime.Today, Status = status, JournalEntries = journals },
@@ -192,14 +193,16 @@ public class OtherTransactionTests
         }
         if (module != "stock-transfers")
         {
-            var replacement = detail["journalEntries"][0].DeepClone(); replacement["id"] = 0; replacement["amount"] = 20;
-            detail["journalEntries"][0]["deleted"] = true; detail["journalEntries"].AsArray().Add(replacement);
+            var business = detail["journalEntries"].AsArray().Single(j => j["notes"]?.GetValue<string>() != FixtureJournals.Counter);
+            var replacement = business.DeepClone(); replacement["id"] = 0; replacement["amount"] = 20;
+            business["deleted"] = true; detail["journalEntries"].AsArray().Add(replacement);
         }
+        FixtureJournals.Balance(detail);
         var updated = await f.Host.Client.PutAsJsonAsync($"{path}/{id}", detail);
         Assert.True(updated.StatusCode == HttpStatusCode.NoContent, await updated.Content.ReadAsStringAsync());
         var result = await f.Host.Client.GetFromJsonAsync<JsonElement>($"{path}/{id}"); Assert.Equal("Updated", result.GetProperty("notes").GetString());
         if (lineKey != null) Assert.Equal(2m, Assert.Single(result.GetProperty(lineKey).EnumerateArray()).GetProperty("quantity").GetDecimal());
-        if (module != "stock-transfers") Assert.Equal(20m, Assert.Single(result.GetProperty("journalEntries").EnumerateArray()).GetProperty("amount").GetDecimal());
+        if (module != "stock-transfers") Assert.Equal(20m, Assert.Single(FixtureJournals.Business(result.GetProperty("journalEntries"))).GetProperty("amount").GetDecimal());
         var deleted = await f.Host.Client.DeleteAsync($"{path}/{id}"); Assert.True(deleted.StatusCode == HttpStatusCode.NoContent, await deleted.Content.ReadAsStringAsync());
         Assert.Equal(HttpStatusCode.NotFound, (await f.Host.Client.GetAsync($"{path}/{id}")).StatusCode);
         Assert.Equal(2, await f.Db.Suppliers.CountAsync()); Assert.Equal(3, await f.Db.Accounts.CountAsync()); Assert.Equal(1, await f.Db.Items.CountAsync());

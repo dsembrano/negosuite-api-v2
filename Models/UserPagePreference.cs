@@ -19,6 +19,7 @@ public partial class negosuiteContext
 
     partial void OnModelCreatingPartial(ModelBuilder modelBuilder)
     {
+        ConfigureSalesReturns(modelBuilder);
         modelBuilder.Entity<UserPagePreference>(entity =>
         {
             entity.ToTable("user_page_preference");

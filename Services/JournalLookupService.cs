@@ -58,7 +58,7 @@ public sealed class JournalLookupService
                 Balance = j.Balance,
                 Source = j.Source,
                 SourceName = j.Source == "GJ" ? "General Journal" : j.Source == "SI" ? "Sales Invoice" : j.Source == "SR" ? "Cash Invoice" :
-                    j.Source == "PR" ? "Payment Received" : j.Source == "PU" ? "Purchase" : j.Source == "BP" ? "Bill Payment" :
+                    j.Source == "SRT" ? "Sales Return" : j.Source == "PR" ? "Payment Received" : j.Source == "PU" ? "Purchase" : j.Source == "BP" ? "Bill Payment" :
                     j.Source == "OP" ? "Others Payment" : j.Source == "PV" ? "Payment Voucher" : j.Source == "IA" ? "Inventory Adjustment" :
                     j.Source == "II" ? "Stock Issuance" : j.Source == "RR" ? "Receiving Report" : ""
             });

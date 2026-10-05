@@ -150,17 +150,17 @@ public class SalesInvoiceTests
             db.Customers.AddRange(customer, foreignCustomer); db.Items.Add(item); db.Accounts.Add(account); await db.SaveChangesAsync();
             host.Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", await ApiHost.MemberTokenAsync(db, company.Id)); host.Client.DefaultRequestHeaders.Add("configUuid", company.Uuid);
             const string path = "/api/sales-invoices";
-            SalesInvoice Invoice(string number) => new() { UserConfigId = company.Id, CustomerId = customer.Id, InvoiceNo = number, InvoiceDate = DateTime.Today,
+            SalesInvoice Invoice(string number) => FixtureJournals.Balance(new SalesInvoice() { UserConfigId = company.Id, CustomerId = customer.Id, InvoiceNo = number, InvoiceDate = DateTime.Today,
                 DueDate = DateTime.Today.AddDays(30), Amount = 100, Balance = 100, Status = 1,
                 SalesInvoiceDetails = new List<SalesInvoiceDetail> { new() { ItemId = item.Id, Quantity = 1, Rate = 100, Amount = 100, Status = 1 } },
-                JournalEntries = new List<JournalEntry> { new() { UserConfigId = company.Id, AccountId = account.Id, Amount = 100.125m, Balance = 100.125m, Nature = "C", Source = "SI", Status = 1 } } };
+                JournalEntries = new List<JournalEntry> { new() { UserConfigId = company.Id, AccountId = account.Id, Amount = 100.125m, Balance = 100.125m, Nature = "C", Source = "SI", Status = 1 } } });
             var input = Invoice("SI-ONE");
             var response = await host.Client.PostAsJsonAsync(path, input);
             Assert.True(response.StatusCode == HttpStatusCode.Created, await response.Content.ReadAsStringAsync()); Assert.NotNull(response.Headers.Location);
             var created = await response.Content.ReadFromJsonAsync<SalesInvoice>();
-            Assert.Equal("SI-ONE", created.InvoiceNo); Assert.Equal(100.12m, Assert.Single(created.JournalEntries).Amount);
-            Assert.Equal(created.InvoiceDate, Assert.Single(created.JournalEntries).JournalDate);
-            Assert.Equal(created.InvoiceNo, Assert.Single(created.JournalEntries).ReferenceNo);
+            Assert.Equal("SI-ONE", created.InvoiceNo); Assert.Equal(100.12m, Assert.Single(FixtureJournals.Business(created.JournalEntries)).Amount);
+            Assert.Equal(created.InvoiceDate, Assert.Single(FixtureJournals.Business(created.JournalEntries)).JournalDate);
+            Assert.Equal(created.InvoiceNo, Assert.Single(FixtureJournals.Business(created.JournalEntries)).ReferenceNo);
             Assert.Equal(HttpStatusCode.Conflict, (await host.Client.PostAsJsonAsync(path, Invoice("SI-ONE"))).StatusCode);
             input = Invoice("SI-TWO");
             var secondResponse = await host.Client.PostAsJsonAsync(path, input);
@@ -176,10 +176,10 @@ public class SalesInvoiceTests
             update.SalesInvoiceDetails = second.SalesInvoiceDetails;
             Assert.Equal(HttpStatusCode.BadRequest, (await host.Client.PutAsJsonAsync($"{path}/{created.Id}", update)).StatusCode);
             update.SalesInvoiceDetails = new List<SalesInvoiceDetail> { ownDetail };
-            var ownJournal = Assert.Single(update.JournalEntries);
+            var ownJournals = update.JournalEntries; var ownJournal = Assert.Single(FixtureJournals.Business(update.JournalEntries));
             update.JournalEntries = second.JournalEntries;
             Assert.Equal(HttpStatusCode.BadRequest, (await host.Client.PutAsJsonAsync($"{path}/{created.Id}", update)).StatusCode);
-            update.JournalEntries = new List<JournalEntry> { ownJournal };
+            update.JournalEntries = ownJournals;
             update.CustomerId = foreignCustomer.Id;
             Assert.Equal(HttpStatusCode.BadRequest, (await host.Client.PutAsJsonAsync($"{path}/{created.Id}", update)).StatusCode);
             update.CustomerId = customer.Id; update.UserConfigId = other.Id;
@@ -188,10 +188,12 @@ public class SalesInvoiceTests
             ownDetail.Deleted = true; ownJournal.Deleted = true;
             update.SalesInvoiceDetails.Add(new() { ItemId = item.Id, Quantity = 2, Rate = 50, Amount = 100, Status = 1 });
             update.JournalEntries.Add(new() { UserConfigId = company.Id, ReferenceNo = update.InvoiceNo, AccountId = account.Id, Amount = 50.555m, Balance = 50.555m, Nature = "C", Source = "SI", Status = 1 });
+            FixtureJournals.Balance(update);
             Assert.Equal(HttpStatusCode.NoContent, (await host.Client.PutAsJsonAsync($"{path}/{created.Id}", update)).StatusCode);
             var detail = await host.Client.GetFromJsonAsync<SalesInvoice>($"{path}/{created.Id}");
-            Assert.Equal(50m, detail.Balance); Assert.Equal(2m, Assert.Single(detail.SalesInvoiceDetails).Quantity);
-            Assert.Equal(50.56m, Assert.Single(detail.JournalEntries).Amount);
+            Assert.Equal(100m, detail.Balance); Assert.Equal(2m, Assert.Single(detail.SalesInvoiceDetails).Quantity);
+            Assert.Equal(50.56m, Assert.Single(FixtureJournals.Business(detail.JournalEntries)).Amount);
+            await db.SalesInvoices.Where(i => i.Id == created.Id).ExecuteUpdateAsync(x => x.SetProperty(i => i.Balance, 50));
             Assert.Equal(HttpStatusCode.BadRequest, (await host.Client.DeleteAsync($"{path}/{created.Id}")).StatusCode);
             Assert.Equal(HttpStatusCode.NoContent, (await host.Client.DeleteAsync($"{path}/{second.Id}")).StatusCode);
             Assert.False(await db.SalesInvoiceDetails.AnyAsync(d => d.SalesInvoiceId == second.Id));
@@ -202,7 +204,7 @@ public class SalesInvoiceTests
             Assert.Equal(HttpStatusCode.Created, autoResponse.StatusCode);
             var auto = await autoResponse.Content.ReadFromJsonAsync<SalesInvoice>();
             Assert.Equal("AUTO-00000001", auto.InvoiceNo);
-            Assert.Equal(auto.InvoiceNo, Assert.Single(auto.JournalEntries).ReferenceNo);
+            Assert.Equal(auto.InvoiceNo, Assert.Single(FixtureJournals.Business(auto.JournalEntries)).ReferenceNo);
             Assert.Equal(1, await db.TransactionSequences.Where(s => s.UserConfigId == company.Id && s.Source == "SI").Select(s => s.LastSequence).SingleAsync());
         }
         finally { await db.Database.EnsureDeletedAsync(); }

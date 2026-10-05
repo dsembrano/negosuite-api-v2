@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using negosuite_api.Models;
+using negosuite_api.Services;
 using Newtonsoft.Json;
 
 
@@ -18,11 +19,13 @@ namespace negosuite_api.Controllers
 {
     [Authorize]
     [TypeFilter(typeof(ConfigUuidFilter))]
+    [TypeFilter(typeof(TransactionIntegrityFilter), Order = 100)]
     [Route("api/bill-payments")]
     [ApiController]
     public class BillPaymentsController : ControllerBase
     {
         private readonly negosuiteContext _context;
+        private int? CompanyId => HttpContext.Items[ConfigUuidFilter.CompanyIdKey] as int?;
 
         public BillPaymentsController(negosuiteContext context)
         {
@@ -71,7 +74,7 @@ namespace negosuite_api.Controllers
         public async Task<ActionResult<BillPayment>> GetBillPayment(int id)
         {
             var billPayment = await _context.BillPayments
-               .Where(e => e.Id == id)
+               .Where(e => e.Id == id && e.UserConfigId == CompanyId)
                .Include(e => e.Supplier)
                .Include(e => e.PaymentMode)
                .Include(e => e.PaidThroughAccount)
@@ -79,7 +82,8 @@ namespace negosuite_api.Controllers
                .Include(e => e.JournalEntries).ThenInclude(e => e.PaymentToJournalEntry)
                .SingleOrDefaultAsync();
 
-            // Exlude deleted entry
+            if (billPayment == null) return NotFound();
+            // Exclude deleted entries.
             billPayment.JournalEntries = billPayment.JournalEntries.Where(j => j.Status != GeneralJournalsController.STATUS_DELETED).ToList();
 
             if (billPayment == null)
@@ -100,8 +104,8 @@ namespace negosuite_api.Controllers
                 return BadRequest();
             }
 
-            var config = await _context.Configs.FirstOrDefaultAsync();
-            if (config == null || config.APTradeAccountId == null)
+            var config = await _context.Configs.FirstOrDefaultAsync(c => c.Id == CompanyId);
+            if (config == null)
             {
                 return BadRequest();
             }
@@ -115,31 +119,17 @@ namespace negosuite_api.Controllers
             {
                 e.JournalDate = billPayment.ReferenceDate;
 
-                JournalEntry invoiceJE = null;
-                if (e.AccountId == config.APTradeAccountId && e.PaymentToJournalEntryId != null)
-                {
-                    invoiceJE = await _context.JournalEntries.FindAsync(e.PaymentToJournalEntryId);
-                    if (invoiceJE == null) return BadRequest("Bill payment journal entry not found.");
-                }
+
+
 
                 if (e.Id == 0)
                 {
                     e.CreatedDate = DateTime.Now;
                     _context.JournalEntries.Add(e);
+                    _context.Entry(e).Property("BillPaymentId").CurrentValue = id;
 
                     // Credit AP: Subtract payment amount to bill journal entry balance
-                    if (invoiceJE != null)
-                    {
-                        invoiceJE.Balance = invoiceJE.Balance - e.Amount;
-                        invoiceJE.LastUpdatedDate = DateTime.Now;
-                        _context.Entry(invoiceJE).State = EntityState.Modified;
 
-                        var bill = await _context.Bills.FindAsync(invoiceJE.BillId);
-                        bill.Balance = invoiceJE.Balance;
-                        bill.LastUpdatedDate = DateTime.Now;
-                        _context.Entry(bill).State = EntityState.Modified;
-
-                    }
                 }
                 else
                 {
@@ -150,17 +140,7 @@ namespace negosuite_api.Controllers
                         e.Status = GeneralJournalsController.STATUS_DELETED;
 
                         // Credit AP: Subtract payment amount to bill journal entry balance
-                        if (invoiceJE != null)
-                        {
-                            invoiceJE.Balance = invoiceJE.Balance + e.Amount;
-                            invoiceJE.LastUpdatedDate = DateTime.Now;
-                            _context.Entry(invoiceJE).State = EntityState.Modified;
 
-                            var bill = await _context.Bills.FindAsync(invoiceJE.BillId);
-                            bill.Balance = invoiceJE.Balance;
-                            bill.LastUpdatedDate = DateTime.Now;
-                            _context.Entry(bill).State = EntityState.Modified;
-                        }
                     }
                     e.LastUpdatedDate = DateTime.Now;
                     _context.Entry(e).State = EntityState.Modified;
@@ -198,7 +178,7 @@ namespace negosuite_api.Controllers
         {
             var config = await _context.Configs.FirstOrDefaultAsync(e => e.Id == billPayment.UserConfigId);
 
-            if (config == null || config.APTradeAccountId == null)
+            if (config == null)
             {
                 return BadRequest("Missing configuration for Accounts Payable Trade.");
             }
@@ -215,19 +195,7 @@ namespace negosuite_api.Controllers
                 e.CreatedDate = DateTime.Now;
 
                 // Debit: Subtract payment amount to bill balance
-                if (e.AccountId == config.APTradeAccountId && e.PaymentToJournalEntryId != null)
-                {
-                    var billJE = await _context.JournalEntries.FindAsync(e.PaymentToJournalEntryId);
-                    if (billJE == null) return BadRequest("Data integrity error. Missing bill record.");
-                    billJE.Balance = billJE.Balance - e.Amount;
-                    billJE.LastUpdatedDate = DateTime.Now;
-                    _context.Entry(billJE).State = EntityState.Modified;
 
-                    var bill = await _context.Bills.FindAsync(billJE.BillId);
-                    bill.Balance = billJE.Balance;
-                    bill.LastUpdatedDate = DateTime.Now;
-                    _context.Entry(bill).State = EntityState.Modified;
-                }
             }
 
             await _context.SaveChangesAsync();
@@ -238,7 +206,7 @@ namespace negosuite_api.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteBillPayment(int id)
         {
-            var billPayment = await _context.BillPayments.Where(e => e.Id == id)
+            var billPayment = await _context.BillPayments.Where(e => e.Id == id && e.UserConfigId == CompanyId)
                 .Include(e => e.JournalEntries).SingleOrDefaultAsync();
 
             if (billPayment == null)
@@ -246,8 +214,8 @@ namespace negosuite_api.Controllers
                 return NotFound();
             }
 
-            var config = await _context.Configs.FirstOrDefaultAsync();
-            if (config == null || config.APTradeAccountId == null)
+            var config = await _context.Configs.FirstOrDefaultAsync(c => c.Id == CompanyId);
+            if (config == null)
             {
                 return BadRequest();
             }
@@ -257,27 +225,8 @@ namespace negosuite_api.Controllers
             {
                 e.JournalDate = billPayment.ReferenceDate;
 
-                JournalEntry invoiceJE = null;
-                if (e.AccountId == config.APTradeAccountId && e.PaymentToJournalEntryId != null)
-                {
-                    invoiceJE = await _context.JournalEntries.FindAsync(e.PaymentToJournalEntryId);
-                    if (invoiceJE != null)
-                    {
-                        // Credit AP: Subtract payment amount to bill journal entry balance
-                        invoiceJE.Balance = invoiceJE.Balance + e.Amount;
-                        invoiceJE.LastUpdatedDate = DateTime.Now;
-                        _context.Entry(invoiceJE).State = EntityState.Modified;
 
-                        var bill = await _context.Bills.FindAsync(invoiceJE.BillId);
-                        bill.Balance = invoiceJE.Balance;
-                        bill.LastUpdatedDate = DateTime.Now;
-                        _context.Entry(bill).State = EntityState.Modified;
-                    }
-                    else
-                    {
-                        return BadRequest("Bill payment journal entry not found.");
-                    }
-                }
+
 
                 e.Status = GeneralJournalsController.STATUS_DELETED;
                 e.LastUpdatedDate = DateTime.Now;

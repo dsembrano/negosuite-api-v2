@@ -18,6 +18,7 @@ namespace negosuite_api.Controllers
 {
     [Authorize]
     [TypeFilter(typeof(ConfigUuidFilter))]
+    [TypeFilter(typeof(TransactionIntegrityFilter), Order = 100)]
     [Route("api/stock-issuances")]
     [ApiController]
     public class StockIssuancesController : ControllerBase

@@ -19,6 +19,7 @@ namespace negosuite_api.Controllers
 {
     [Authorize]
     [TypeFilter(typeof(ConfigUuidFilter))]
+    [TypeFilter(typeof(TransactionIntegrityFilter), Order = 100)]
     [Route("api/bills")]
     [ApiController]
     public class BillsController : ControllerBase
@@ -90,157 +91,14 @@ namespace negosuite_api.Controllers
                 return BadRequest("Invalid amount. Payment already applied to this Bill is more than the new amount.");
             }
 
-            // Invoice Details
+            await inventory.ApplyAsync(_context, bill, false, HttpContext.RequestAborted);
             foreach (var e in bill.BillDetails.ToList())
             {
                 e.BillId = id;
-                // Convert date to local timezone
-                var itemInventory = inventory.Summaries.GetValueOrDefault(e.ItemId);
-
-                if (e.Id == 0)
-                {
-                    e.CreatedDate = DateTime.Now;
-                    _context.BillDetails.Add(e);
-
-                    // Calculate average cost based on landed cost ////////////////////////////////////////////////////////////////////////////
-
-                    decimal? newAverageCost = 0;
-
-                    var landedCost = e.Rate + (e.LandedCost.HasValue ? e.LandedCost / e.Quantity : 0);
-
-                    if (itemInventory != null && itemInventory.AverageCost.HasValue && itemInventory.AverageCost > 0 && itemInventory.Quantity > 0 && itemInventory.Quantity + e.Quantity != 0)
-                    {
-                        newAverageCost = ((itemInventory.Quantity * itemInventory.AverageCost) + (landedCost * e.Quantity)) / (itemInventory.Quantity + e.Quantity);
-                    }
-
-                    var item = inventory.Items[e.ItemId];
-                    if (item.LastPurchasedDate == null || item.LastPurchasedDate <= bill.BillDate || !item.Cost.HasValue)
-                    {
-                        item.LastPurchasedDate = bill.BillDate;
-                        item.Cost = e.Rate;
-                    }
-
-                    item.AverageCost = (newAverageCost > 0) ? newAverageCost : landedCost;
-
-                    _context.Entry(item).State = EntityState.Modified;
-                    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-                }
-                else
-                {
-                    if (e.Deleted == true)
-                    {
-                        // Calculate average cost based on landed cost ////////////////////////////////////////////////////////////////////////////
-
-                        decimal? newAverageCost = 0;
-
-                        var landedCost = e.Rate + (e.LandedCost.HasValue ? e.LandedCost / e.Quantity : 0);
-
-                        if (itemInventory != null && itemInventory.AverageCost.HasValue &&
-                            itemInventory.AverageCost > 0 && itemInventory.Quantity > 0 &&
-                            itemInventory.Quantity > e.Quantity)
-                        {
-                            newAverageCost = ((itemInventory.Quantity * itemInventory.AverageCost) + (landedCost * -e.Quantity)) / (itemInventory.Quantity + -e.Quantity);
-                        }
-
-                        var item = inventory.Items[e.ItemId];
-                        item.AverageCost = (newAverageCost > 0) ? newAverageCost : landedCost;
-
-                        _context.Entry(item).State = EntityState.Modified;
-                        /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
-
-                        var entry = await _context.BillDetails.FindAsync(e.Id);
-                        _context.BillDetails.Remove(entry);
-                    }
-                    else
-                    {
-
-                        if (e.Touched == true)
-                        {
-
-                            // Remove quantity of original value of item and recalculate average cost  ////////////////////////////////////////////
-                            var d = inventory.Originals[e.Id];
-                            var landedCost = d.Rate + (d.LandedCost.HasValue ? d.LandedCost / d.Quantity : 0);
-                            decimal? newAverageCost = 0;
-
-                            var itemInventory0 = inventory.Summaries.GetValueOrDefault(d.ItemId);
-
-                            if (itemInventory0 != null && itemInventory0.AverageCost.HasValue &&
-                                itemInventory0.AverageCost > 0 && itemInventory0.Quantity > 0 &&
-                                itemInventory0.Quantity > d.Quantity)
-                            {
-                                newAverageCost = ((itemInventory0.Quantity * itemInventory0.AverageCost) - (landedCost * d.Quantity)) / (itemInventory0.Quantity - d.Quantity);
-                                newAverageCost = (newAverageCost > 0) ? newAverageCost : landedCost;
-                            }
-
-                            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-                            if (d.ItemId == e.ItemId)
-                            {
-                                var item0 = inventory.Items[d.ItemId];
-
-                                landedCost = e.Rate + (e.LandedCost.HasValue ? e.LandedCost / e.Quantity : 0);
-                                var itemQuantity = (itemInventory0?.Quantity ?? 0) - d.Quantity;
-
-                                if (newAverageCost > 0 && itemQuantity > 0 && itemQuantity + e.Quantity != 0)
-                                {
-                                    newAverageCost = ((itemQuantity * newAverageCost) + (landedCost * e.Quantity)) / (itemQuantity + e.Quantity);
-                                }
-
-                                item0.AverageCost = (newAverageCost > 0) ? newAverageCost : landedCost;
-                                if (item0.LastPurchasedDate == null || item0.LastPurchasedDate <= bill.BillDate || !item0.Cost.HasValue)
-                                {
-                                    item0.LastPurchasedDate = bill.BillDate;
-                                    item0.Cost = e.Rate;
-                                }
-                                _context.Entry(item0).State = EntityState.Modified;
-
-                                e.LastUpdatedDate = DateTime.Now;
-                                _context.Entry(e).State = EntityState.Modified;
-                            }
-                            else
-                            {
-                                // Restore previous cost of replaced item /////////////////////////////////////////////////////////
-                                var item0 = inventory.Items[d.ItemId];
-
-                                item0.AverageCost = (newAverageCost > 0) ? newAverageCost : landedCost;
-                                if (item0.LastPurchasedDate == null || item0.LastPurchasedDate <= bill.BillDate || !item0.Cost.HasValue)
-                                {
-                                    item0.LastPurchasedDate = bill.BillDate;
-                                    item0.Cost = e.Rate;
-                                }
-                                _context.Entry(item0).State = EntityState.Modified;
-
-
-                                // Update cost of new item //////////////////////////////////////////////////////////////////////////
-                                newAverageCost = 0;
-                                landedCost = e.Rate + (e.LandedCost.HasValue ? e.LandedCost / e.Quantity : 0);
-
-                                if (itemInventory != null && itemInventory.AverageCost.HasValue && itemInventory.AverageCost > 0 && itemInventory.Quantity > 0 && itemInventory.Quantity + e.Quantity != 0)
-                                {
-                                    newAverageCost = ((itemInventory.Quantity * itemInventory.AverageCost) + (landedCost * e.Quantity)) / (itemInventory.Quantity + e.Quantity);
-                                }
-
-                                var item1 = inventory.Items[e.ItemId];
-                                item1.AverageCost = (newAverageCost > 0) ? newAverageCost : landedCost;
-                                if (item1.LastPurchasedDate == null || item1.LastPurchasedDate <= bill.BillDate || !item1.Cost.HasValue)
-                                {
-                                    item1.LastPurchasedDate = bill.BillDate;
-                                    item1.Cost = e.Rate;
-                                }
-
-                                _context.Entry(item1).State = EntityState.Modified;
-
-                                e.LastUpdatedDate = DateTime.Now;
-                                _context.Entry(e).State = EntityState.Modified;
-                            }
-
-                        }
-                    }
-                }
+                if (e.Id == 0) { e.CreatedDate = DateTime.Now; _context.BillDetails.Add(e); }
+                else if (e.Deleted == true) _context.Entry(e).State = EntityState.Deleted;
+                else if (e.Touched == true) { e.LastUpdatedDate = DateTime.Now; _context.Entry(e).State = EntityState.Modified; }
             }
-
-            JournalEntriesController.SanitizeEntries(bill.JournalEntries);
 
             // Journal Entries
             foreach (var e in bill.JournalEntries.ToList())
@@ -312,35 +170,8 @@ namespace negosuite_api.Controllers
 
 
 
-            // Details
-            foreach (var e in bill.BillDetails)
-            {
-                e.CreatedDate = DateTime.Now;
-
-                // Calculate average cost based on landed cost ////////////////////////////////////////////////////////////////////////////
-                var itemInventory = inventory.Summaries.GetValueOrDefault(e.ItemId);
-                decimal? newAverageCost = 0;
-
-                var landedCost = e.Rate + (e.LandedCost.HasValue ? e.LandedCost / e.Quantity : 0);
-
-                if (itemInventory != null && itemInventory.AverageCost.HasValue && itemInventory.AverageCost > 0 && itemInventory.Quantity > 0 && itemInventory.Quantity + e.Quantity != 0)
-                {
-                    newAverageCost = ((itemInventory.Quantity * itemInventory.AverageCost) + (landedCost * e.Quantity)) / (itemInventory.Quantity + e.Quantity);
-                }
-
-                var item = inventory.Items[e.ItemId];
-                if (item.LastPurchasedDate == null || item.LastPurchasedDate <= bill.BillDate || !item.Cost.HasValue)
-                {
-                    item.LastPurchasedDate = bill.BillDate;
-                    item.Cost = e.Rate;
-                }
-
-                item.AverageCost = (newAverageCost > 0) ? newAverageCost : landedCost;
-
-                _context.Entry(item).State = EntityState.Modified;
-                ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-            }
+            await inventory.ApplyAsync(_context, bill, false, HttpContext.RequestAborted);
+            foreach (var e in bill.BillDetails) e.CreatedDate = DateTime.Now;
 
             foreach (var e in bill.JournalEntries)
             {
@@ -383,27 +214,8 @@ namespace negosuite_api.Controllers
                 _context.Entry(e).State = EntityState.Deleted;
             }
 
-            // Bill Details
-            foreach (var e in bill.BillDetails.ToList())
-            {
-                e.BillId = id;
-                var itemInventory = inventory.Summaries.GetValueOrDefault(e.ItemId);
-                decimal? newAverageCost = 0;
-                var landedCost = e.Rate + (e.LandedCost.HasValue ? e.LandedCost / e.Quantity : 0);
-
-                if (itemInventory != null && itemInventory.AverageCost.HasValue && itemInventory.AverageCost > 0 && itemInventory.Quantity > e.Quantity)
-                {
-                    newAverageCost = ((itemInventory.Quantity * itemInventory.AverageCost) + (landedCost * -e.Quantity)) / (itemInventory.Quantity + -e.Quantity);
-                }
-
-                var item = inventory.Items[e.ItemId];
-                item.AverageCost = (newAverageCost > 0) ? newAverageCost : landedCost;
-
-                _context.Entry(item).State = EntityState.Modified;
-                /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
-
-                _context.Entry(e).State = EntityState.Deleted;
-            }
+            await inventory.ApplyAsync(_context, bill, true, HttpContext.RequestAborted);
+            foreach (var e in bill.BillDetails.ToList()) _context.Entry(e).State = EntityState.Deleted;
 
             _context.Entry(bill).State = EntityState.Deleted;
 

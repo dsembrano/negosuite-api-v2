@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -13,11 +13,13 @@ namespace negosuite_api.Controllers
 {
     [Authorize]
     [TypeFilter(typeof(ConfigUuidFilter))]
+    [TypeFilter(typeof(TransactionIntegrityFilter), Order = 100)]
     [Route("api/expense-payments")]
     [ApiController]
     public class ExpensePaymentsController : ControllerBase
     {
         private readonly negosuiteContext _context;
+        private int? CompanyId => HttpContext.Items[ConfigUuidFilter.CompanyIdKey] as int?;
 
         public ExpensePaymentsController(negosuiteContext context)
         {
@@ -30,7 +32,7 @@ namespace negosuite_api.Controllers
 
             SelectCriteria selectCriteria = !string.IsNullOrEmpty(criteria) ? JsonConvert.DeserializeObject<SelectCriteria>(criteria) : null;
 
-            var result = await _context.ExpensePayments
+            var result = await negosuite_api.Services.LegacyPaymentScope.Expenses(_context, CompanyId.Value)
                 .Where(e => (selectCriteria != null && selectCriteria.SupplierId.HasValue) ? e.SupplierId == selectCriteria.SupplierId : true)
                 .Where(e => (selectCriteria != null && selectCriteria.CustomerId.HasValue) ? e.CustomerId == selectCriteria.CustomerId : true)
                 .Where(e => e.ReferenceDate >= (
@@ -67,7 +69,7 @@ namespace negosuite_api.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<ExpensePayment>> GetExpensePayment(int id)
         {
-            var expensePayment = await _context.ExpensePayments
+            var expensePayment = await negosuite_api.Services.LegacyPaymentScope.Expenses(_context, CompanyId.Value)
                .Where(e => e.Id == id)
                .Include(e => e.Supplier)
                .Include(e => e.Customer)
@@ -80,7 +82,7 @@ namespace negosuite_api.Controllers
                .SingleOrDefaultAsync();
 
             // Remove deleted entries unles main status is deleted
-            if ( expensePayment.Status != GeneralJournalsController.STATUS_DELETED)
+            if (expensePayment != null && expensePayment.Status != GeneralJournalsController.STATUS_DELETED)
             {
                 expensePayment.JournalEntries = expensePayment.JournalEntries.Where(j => j.Status != GeneralJournalsController.STATUS_DELETED).ToList();
             }
@@ -114,6 +116,7 @@ namespace negosuite_api.Controllers
                 {
                     e.CreatedDate = DateTime.Now;
                     _context.JournalEntries.Add(e);
+                    _context.Entry(e).Property("ExpensePaymentId").CurrentValue = id;
                 }
                 else
                 {
@@ -168,7 +171,7 @@ namespace negosuite_api.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteExpensePayment(int id)
         {
-            var expensePayment = await _context.ExpensePayments
+            var expensePayment = await negosuite_api.Services.LegacyPaymentScope.Expenses(_context, CompanyId.Value)
                 .Where(e => e.Id == id)
                 .Include(e => e.JournalEntries).SingleOrDefaultAsync();
 

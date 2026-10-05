@@ -37,6 +37,8 @@ Accounts and Account Categories: [DTOs, company scope, hierarchy checks, sorting
 
 Users, roles and company settings: [administration DTOs, membership validation, protected onboarding, and compatibility](docs/administration-refactoring.md).
 
+Authentication and email: [services, DTOs, reset-link verification, asynchronous delivery, and client compatibility](docs/auth-email-refactoring.md).
+
 Tax Rates, Discount Types, Responsibility Centers/Types and Inventory Locations: [DTOs, optional pagination, sorting, atomic bulk saves, and reference validation](docs/maintenance-refactoring.md).
 
 Shared lookup and navigation APIs: [Payment Modes/Terms, Currencies, Countries, Cities, Industries, and Navigation Items](docs/reference-data-refactoring.md).

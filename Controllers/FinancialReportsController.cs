@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -274,6 +274,9 @@ namespace negosuite_api.Controllers
                     break;
                 case "SR":
                     name = "Cash Invoice";
+                    break;
+                case "SRT":
+                    name = "Sales Return";
                     break;
                 case "PR":
                     name = "Payment Received";

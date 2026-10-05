@@ -6,6 +6,26 @@ namespace Negosuite.Api.CompatibilityTests;
 
 public class SwaggerTests
 {
+    [Fact]
+    public async Task Auth_and_email_routes_publish_separate_requests_without_stored_secret_models()
+    {
+        using var host = new ApiHost();
+        using var document = JsonDocument.Parse(await host.Client.GetStringAsync("/swagger/v1/swagger.json"));
+        var paths = document.RootElement.GetProperty("paths"); var schemas = document.RootElement.GetProperty("components").GetProperty("schemas");
+        foreach (var (path, request) in new[] { ("auth/sign-in", "SignInRequest"), ("auth/refresh-access-token", "RefreshAccessTokenRequest"),
+            ("auth/change-password", "ChangePasswordRequest"), ("auth/reset-password", "ResetPasswordRequest"), ("email", "SendEmailRequest"),
+            ("email/member-invite", "MemberInviteRequest"), ("email/email-confirmation", "EmailConfirmationRequest"), ("email/password-reset", "PasswordResetEmailRequest") })
+        {
+            var schema = paths.GetProperty("/api/" + path).GetProperty("post").GetProperty("requestBody").GetProperty("content").GetProperty("application/json").GetProperty("schema");
+            Assert.Equal("#/components/schemas/" + request, schema.GetProperty("$ref").GetString());
+        }
+        Assert.False(schemas.GetProperty("AuthUserDto").GetProperty("properties").TryGetProperty("password", out _));
+        Assert.False(schemas.TryGetProperty("EmailWorkflowData", out _));
+        Assert.Contains(schemas.GetProperty("ResetPasswordRequest").GetProperty("required").EnumerateArray(), p => p.GetString() == "identifier");
+        Assert.True(paths.TryGetProperty("/api/auth/app-version", out _)); Assert.True(paths.TryGetProperty("/api/auth/metabase-token", out _));
+        Assert.True(paths.TryGetProperty("/api/email/log/{uuid}", out _));
+    }
+
     [Theory]
     [InlineData("accounts", "Account")]
     [InlineData("payment-modes", "PaymentMode")]

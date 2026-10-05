@@ -19,6 +19,7 @@ namespace negosuite_api.Controllers
 {
     [Authorize]
     [TypeFilter(typeof(ConfigUuidFilter))]
+    [TypeFilter(typeof(TransactionIntegrityFilter), Order = 100)]
     [Route("api/sales-invoices")]
     [ApiController]
     public class SalesInvoicesController : ControllerBase
@@ -297,7 +298,7 @@ namespace negosuite_api.Controllers
                 return null;
             }
 
-            using var transaction = _context.Database.BeginTransaction();
+            // Number allocation participates in the enclosing company transaction.
 
             var sequence = _context.TransactionSequences.FirstOrDefault(e => e.UserConfigId == userConfigId && e.Source == "SI");
 
@@ -314,7 +315,7 @@ namespace negosuite_api.Controllers
 
             sequence.LastSequence++;
             _context.SaveChanges();
-            transaction.Commit();
+
 
             var formattedSequence = AutoReferenceNoConfig.getFormattedSequenceNo(sequence.LastSequence, autoReferenceNoConfig.AutoSIReferenceNoFormat);
 

@@ -76,7 +76,7 @@ public static class CashDisbursementRules
         catch (JsonException) { return false; }
     }
 
-    private static string ValidateCenters(string json, Account account, IReadOnlyCollection<ResponsibilityCenterType> types, IReadOnlyCollection<ResponsibilityCenter> centers, UserRole role)
+    public static string ValidateCenters(string json, Account account, IReadOnlyCollection<ResponsibilityCenterType> types, IReadOnlyCollection<ResponsibilityCenter> centers, UserRole role)
     {
         try
         {
@@ -91,6 +91,7 @@ public static class CashDisbursementRules
                 var permission = permissions.FirstOrDefault(p => (int?)p["responsibilityCenterTypeId"] == type);
                 if (permission != null && !(permission["responsibilityCenterIds"] is JArray allowed && allowed.Values<int>().Contains(id))) return "Responsibility center access denied.";
             }
+            if (account == null) return null; // Header/draft scope check; required account fields apply on posting.
             foreach (var type in types)
             {
                 var tags = JArray.Parse(string.IsNullOrEmpty(type.RequiredByTags) ? "[]" : type.RequiredByTags).Values<int>().ToArray();

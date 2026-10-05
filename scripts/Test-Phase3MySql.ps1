@@ -28,8 +28,11 @@ try {
     $env:NEGOSUITE_PHASE3_MYSQL = "server=127.0.0.1;port=33316;user=root;password=$password;SslMode=Required"
     $testArgs = @('test', 'tests/Negosuite.Api.CompatibilityTests/Negosuite.Api.CompatibilityTests.csproj', '-c', 'Release', '--no-restore', '--logger', 'trx;LogFileName=phase3-mysql.trx', '--results-directory', 'bin/phase3-verification')
     if ($Filter) { $testArgs += @('--filter', $Filter) }
-    & dotnet @testArgs
-    if ($LASTEXITCODE -ne 0) { throw 'Phase 3 tests failed. See test results.' }
+    $ErrorActionPreference = 'Continue'
+    & dotnet @testArgs 2>&1 | ForEach-Object { "$_" }
+    $testExit = $LASTEXITCODE
+    $ErrorActionPreference = 'Stop'
+    if ($testExit -ne 0) { throw 'Phase 3 tests failed. See test results.' }
 } finally {
     $env:NEGOSUITE_PHASE3_MYSQL = $oldConnection
     if ($daemon -and !$daemon.HasExited) {

@@ -84,6 +84,10 @@ namespace negosuite_api
             services.AddAuthorization();
             services.AddHealthChecks();
             services.AddSingleton<IEmailService, EmailService>();
+            services.AddSingleton<EmailTemplateService>();
+            services.AddSingleton<AuthTokenService>();
+            services.AddScoped<AuthService>();
+            services.AddScoped<EmailWorkflowService>();
             services.AddScoped<ConfigUuidFilter>();
             services.AddScoped<CompanyAccessService>();
             services.AddScoped<UserService>();
@@ -109,6 +113,8 @@ namespace negosuite_api
             services.AddScoped<AccountService>();
             services.AddScoped<AccountCategoryService>();
             services.AddScoped<SalesInvoiceService>();
+            services.AddScoped<SalesReturnService>();
+            services.AddScoped<ReceivableApplicationService>();
             services.AddScoped<SalesReceiptService>();
             services.AddScoped<SalesInvoicePaymentService>();
             services.AddScoped<BillService>();

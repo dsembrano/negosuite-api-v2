@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -32,6 +32,7 @@ namespace negosuite_api.Models
         public DateTime? PostedDate { get; set; }
         public int? PostedByUserId { get; set; }
         public int? SalesInvoiceId { get; set; }
+        public int? SalesReturnId { get; set; }
         public int? SalesInvoicePaymentId { get; set; }
         public int? SalesReceiptId { get; set; }
         public int? BillId { get; set; }

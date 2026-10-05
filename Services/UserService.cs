@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using negosuite_api.Contracts.Administration;
+using negosuite_api.Contracts.Email;
 using negosuite_api.Controllers;
 using negosuite_api.Models;
 using Newtonsoft.Json;
@@ -133,8 +134,8 @@ public sealed class UserService
         var log = logs.SingleOrDefault();
         Require(log != null && log.Status == 1 && log.ExpiryDate > DateTime.Now && log.Action == (newAccount ? "new-account" : "member-invite"), "Invalid or expired invitation or activation link.");
         Require(string.Equals(input.Email, log.Email, StringComparison.OrdinalIgnoreCase), "Email does not match the invitation.");
-        EmailPayload payload;
-        try { payload = JsonConvert.DeserializeObject<EmailPayload>(log.Data ?? "null"); }
+        EmailWorkflowData payload;
+        try { payload = JsonConvert.DeserializeObject<EmailWorkflowData>(log.Data ?? "null"); }
         catch (JsonException) { throw new AdministrationException("Invalid invitation data."); }
         Require(payload != null, "Invalid invitation data.");
         int? company = null, roleId = null;
@@ -155,7 +156,7 @@ public sealed class UserService
             var count = await db.Users.CountAsync(u => u.ConfigId == company && u.Status && u.UserTypeId != UsersController.CONFIG_ADMIN, ct);
             Require(!config.MaxUserCount.HasValue || count < config.MaxUserCount, "Your team has reached the maximum number of users allowed for the subscription plan.");
             Require(!string.IsNullOrWhiteSpace(input.Password), "Password is required.");
-            password = AuthController.CalculateSha256Hash(input.Password);
+            password = PasswordSecurity.Hash(input.Password);
         }
         Require(!await db.Users.AnyAsync(u => u.Email == log.Email, ct), "Email address already exists.");
         var user = new User { Name = input.Name, Email = log.Email, Password = password, ConfigId = company,

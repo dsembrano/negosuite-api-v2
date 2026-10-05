@@ -29,7 +29,8 @@ public sealed class ApiHost : IDisposable
     public TestServer Server { get; }
     public HttpClient Client { get; }
     private readonly IHost host;
-    public ApiHost(string connection = "server=127.0.0.1;port=1;database=unavailable;user=test;password=test", bool? enforceSingleWebSession = null)
+    public ApiHost(string connection = "server=127.0.0.1;port=1;database=unavailable;user=test;password=test", bool? enforceSingleWebSession = null,
+        Action<IServiceCollection> configureServices = null, IDictionary<string, string> settings = null)
     {
         host = new HostBuilder().ConfigureWebHost(web => web.UseTestServer().UseEnvironment("Development")
             .ConfigureAppConfiguration((_, builder) => builder.AddInMemoryCollection(new Dictionary<string, string>
@@ -38,7 +39,7 @@ public sealed class ApiHost : IDisposable
                 ["Authentication:EnforceSingleWebSession"] = enforceSingleWebSession?.ToString(),
                 ["ReverseProxy:KnownProxies:0"] = "192.0.2.10",
                 ["Jwt:Key"] = Key, ["Jwt:Issuer"] = "phase3", ["Jwt:Audience"] = "phase3"
-            }))
+            }).AddInMemoryCollection(settings ?? new Dictionary<string, string>()))
             .UseStartup<Startup>()
             .ConfigureTestServices(services =>
             {
@@ -46,6 +47,7 @@ public sealed class ApiHost : IDisposable
                 services.Configure<RequestLocalizationOptions>(options => options
                     .SetDefaultCulture("en-US").AddSupportedCultures("en-US", "fr-FR")
                     .AddSupportedUICultures("en-US", "fr-FR"));
+                configureServices?.Invoke(services);
             })).Start();
         Server = host.GetTestServer();
         Client = Server.CreateClient();
@@ -63,7 +65,8 @@ public sealed class ApiHost : IDisposable
     public static async Task<string> MemberTokenAsync(negosuiteContext db, int companyId)
     {
         var user = new User { Name = "Authenticated fixture member", Email = Guid.NewGuid().ToString("N") + "@example.test",
-            Password = "unused-fixture-password", Status = true, ConfigId = companyId };
+            Password = "unused-fixture-password", Status = true, ConfigId = companyId,
+            UserRole = new UserRole { Name = "Fixture administrator", IsAdmin = true, UserConfigId = companyId } };
         db.Users.Add(user); await db.SaveChangesAsync();
         return Token(userId: user.Id);
     }

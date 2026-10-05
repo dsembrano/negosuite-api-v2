@@ -17,11 +17,11 @@ public partial class PaymentsController
     public async Task<ActionResult<PaymentDetailDto>> PostDisbursement(PaymentCreateRequest request)
     {
         if (!CompanyId.HasValue) return Unauthorized();
-        await using var transaction = await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable);
+        // Shared transaction filter owns the company lock and commit.
         var error = await ValidateDisbursement(request, null, "canCreate");
         if (error != null) return error;
         var result = await PostPayment(request);
-        if (result.Result is CreatedAtActionResult) await transaction.CommitAsync();
+
         return result;
     }
 
@@ -29,11 +29,11 @@ public partial class PaymentsController
     public async Task<IActionResult> PutDisbursement(int id, PaymentUpdateRequest request)
     {
         if (!CompanyId.HasValue) return Unauthorized();
-        await using var transaction = await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable);
+        // Shared transaction filter owns the company lock and commit.
         var error = await ValidateDisbursement(request, id, "canEdit");
         if (error != null) return error;
         var result = await PutPayment(id, request);
-        if (result is NoContentResult) await transaction.CommitAsync();
+
         return result;
     }
 
@@ -41,11 +41,11 @@ public partial class PaymentsController
     public async Task<IActionResult> DeleteDisbursement(int id)
     {
         if (!CompanyId.HasValue) return Unauthorized();
-        await using var transaction = await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable);
+        // Shared transaction filter owns the company lock and commit.
         var error = await ValidateDisbursement(null, id, "canDelete");
         if (error != null) return error;
         var result = await DeletePayment(id);
-        if (result is NoContentResult) await transaction.CommitAsync();
+
         return result;
     }
 

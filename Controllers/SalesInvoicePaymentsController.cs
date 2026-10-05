@@ -19,6 +19,8 @@ namespace negosuite_api.Controllers
 {
     [Authorize]
     [TypeFilter(typeof(ConfigUuidFilter))]
+    [TypeFilter(typeof(TransactionIntegrityFilter), Order = 100)]
+    [TypeFilter(typeof(AdministrationExceptionFilter))]
     [Route("api/sales-invoice-payments")]
     [ApiController]
     public class SalesInvoicePaymentsController : ControllerBase
@@ -67,6 +69,7 @@ namespace negosuite_api.Controllers
             var salesInvoicePayment = TransactionWriteMapping.Map(request);
             if (!CompanyId.HasValue) return Unauthorized();
             if (salesInvoicePayment.UserConfigId != CompanyId) return Forbid();
+
             if (id != salesInvoicePayment.Id)
             {
                 return BadRequest();
@@ -82,7 +85,7 @@ namespace negosuite_api.Controllers
             }
 
             var config = await _context.Configs.FirstOrDefaultAsync(c => c.Id == salesInvoicePayment.UserConfigId);
-            if (config == null || config.ARTradeAccountId == null)
+            if (config == null)
             {
                 return BadRequest();
             }
@@ -90,74 +93,14 @@ namespace negosuite_api.Controllers
             JournalEntriesController.SanitizeEntries(salesInvoicePayment.JournalEntries);
             salesInvoicePayment.LastUpdatedDate = DateTime.Now;
 
-            // Journal Entries
-            foreach (var e in salesInvoicePayment.JournalEntries.ToList())
+            var changed = salesInvoicePayment.JournalEntries.ToList();
+            foreach (var e in changed)
             {
-                e.SalesInvoicePaymentId = id;
-                e.JournalDate = salesInvoicePayment.ReferenceDate;
-
-                JournalEntry invoiceJE = null;
-                if (e.AccountId == config.ARTradeAccountId && e.PaymentToJournalEntryId != null)
-                {
-                    invoiceJE = await _context.JournalEntries.SingleOrDefaultAsync(j => j.Id == e.PaymentToJournalEntryId && j.UserConfigId == CompanyId.Value);
-                    if (invoiceJE == null) return BadRequest("Invoice journal entry not found.");
-                }
-
-                if (e.Id == 0)
-                {
-                    e.CreatedDate = DateTime.Now;
-                    _context.JournalEntries.Add(e);
-
-                    // Credit AR: Subtract payment amount to invoice journal entry balance
-                    if (invoiceJE != null)
-                    {
-                        invoiceJE.Balance = invoiceJE.Balance - e.Amount;
-                        invoiceJE.LastUpdatedDate = DateTime.Now;
-                        _context.Entry(invoiceJE).State = EntityState.Modified;
-
-                        if (invoiceJE.Source == "SI")
-                        {
-                            var salesInvoice = await _context.SalesInvoices.SingleOrDefaultAsync(i => i.Id == invoiceJE.SalesInvoiceId && i.UserConfigId == CompanyId.Value);
-                            if (salesInvoice == null) return BadRequest("Invoice not found for this company.");
-                            salesInvoice.Balance = invoiceJE.Balance;
-                            salesInvoice.LastUpdatedDate = DateTime.Now;
-                            _context.Entry(salesInvoice).State = EntityState.Modified;
-                        }
-                    }
-                }
-                else
-                {
-                    if (e.Deleted == true)
-                    {
-                        var entry = await _context.JournalEntries.FindAsync(e.Id);
-                        _context.JournalEntries.Remove(entry);
-
-                        // Credit AR: Add payment amount to invoice journal entry balance
-                        if (invoiceJE != null)
-                        {
-                            invoiceJE.Balance = invoiceJE.Balance + e.Amount;
-                            invoiceJE.LastUpdatedDate = DateTime.Now;
-                            _context.Entry(invoiceJE).State = EntityState.Modified;
-
-                            if (invoiceJE.Source == "SI")
-                            {
-                                var salesInvoice = await _context.SalesInvoices.SingleOrDefaultAsync(i => i.Id == invoiceJE.SalesInvoiceId && i.UserConfigId == CompanyId.Value);
-                                if (salesInvoice == null) return BadRequest("Invoice not found for this company.");
-                                salesInvoice.Balance = invoiceJE.Balance;
-                                salesInvoice.LastUpdatedDate = DateTime.Now;
-                                _context.Entry(salesInvoice).State = EntityState.Modified;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        e.LastUpdatedDate = DateTime.Now;
-                        _context.Entry(e).State = EntityState.Modified;
-                    }
-                }
-
+                e.SalesInvoicePaymentId = id; e.JournalDate = salesInvoicePayment.ReferenceDate;
+                if (e.Id == 0) { e.CreatedDate = DateTime.Now; _context.JournalEntries.Add(e); }
+                else if (e.Deleted == true) _context.Entry(e).State = EntityState.Deleted;
+                else { e.LastUpdatedDate = DateTime.Now; _context.Entry(e).State = EntityState.Modified; }
             }
-
 
             _context.Entry(salesInvoicePayment).State = EntityState.Modified;
 
@@ -177,6 +120,7 @@ namespace negosuite_api.Controllers
                 }
             }
 
+
             return NoContent();
         }
 
@@ -188,6 +132,7 @@ namespace negosuite_api.Controllers
             var salesInvoicePayment = TransactionWriteMapping.Map(request);
             if (!CompanyId.HasValue) return Unauthorized();
             if (salesInvoicePayment.UserConfigId != CompanyId) return Forbid();
+
             if (salesInvoicePayment.Id != 0) return BadRequest("New transaction ID must be zero or omitted.");
             var validationError = await service.ValidateWriteAsync(CompanyId.Value, null, salesInvoicePayment, HttpContext.RequestAborted);
             if (validationError != null) return BadRequest(validationError);
@@ -198,7 +143,7 @@ namespace negosuite_api.Controllers
             }
 
             var config = await _context.Configs.FirstOrDefaultAsync(c => c.Id == salesInvoicePayment.UserConfigId);
-            if (config == null || config.ARTradeAccountId == null)
+            if (config == null)
             {
                 return BadRequest("Missing configuration for Accounts Receivable Trade.");
             }
@@ -208,33 +153,10 @@ namespace negosuite_api.Controllers
 
             _context.SalesInvoicePayments.Add(salesInvoicePayment);
 
-            foreach (var e in salesInvoicePayment.JournalEntries)
-            {
-                e.JournalDate = salesInvoicePayment.ReferenceDate;
-                e.CreatedDate = DateTime.Now;
-
-                // Credit AR: Subtract payment amount to invoice balance
-                if (e.AccountId == config.ARTradeAccountId && e.PaymentToJournalEntryId != null)
-                {
-                    var invoiceJE = await _context.JournalEntries.SingleOrDefaultAsync(j => j.Id == e.PaymentToJournalEntryId && j.UserConfigId == CompanyId.Value);
-                    if (invoiceJE == null) return BadRequest("Data integrity error. Missing Sales Invoice record.");
-                    invoiceJE.Balance = invoiceJE.Balance - e.Amount;
-                    invoiceJE.LastUpdatedDate = DateTime.Now;
-                    _context.Entry(invoiceJE).State = EntityState.Modified;
-
-                    if (invoiceJE.Source == "SI")
-                    {
-                        var salesInvoice = await _context.SalesInvoices.SingleOrDefaultAsync(i => i.Id == invoiceJE.SalesInvoiceId && i.UserConfigId == CompanyId.Value);
-                        if (salesInvoice == null) return BadRequest("Invoice not found for this company.");
-                        salesInvoice.Balance = invoiceJE.Balance;
-                        salesInvoice.LastUpdatedDate = DateTime.Now;
-                        _context.Entry(salesInvoice).State = EntityState.Modified;
-                    }
-                }
-
-            }
+            foreach (var e in salesInvoicePayment.JournalEntries) { e.JournalDate = salesInvoicePayment.ReferenceDate; e.CreatedDate = DateTime.Now; }
 
             await _context.SaveChangesAsync();
+
 
             return CreatedAtAction("GetSalesInvoicePayment", new { id = salesInvoicePayment.Id }, new TransactionResponseMapping().Map(salesInvoicePayment));
         }
@@ -252,10 +174,7 @@ namespace negosuite_api.Controllers
                 return NotFound();
             }
 
-            if (salesInvoicePayment.Balance < salesInvoicePayment.Amount)
-            {
-                return BadRequest("Can not delete this transaction because payment was already applied.");
-            }
+
 
             // Journal Entries
             foreach (var e in salesInvoicePayment.JournalEntries.ToList())

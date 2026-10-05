@@ -18,6 +18,7 @@ namespace negosuite_api.Controllers
 {
     [Authorize]
     [TypeFilter(typeof(ConfigUuidFilter))]
+    [TypeFilter(typeof(TransactionIntegrityFilter), Order = 100)]
     [Route("api/stock-transfers")]
     [ApiController]
     public class StockTransfersController : ControllerBase
@@ -142,7 +143,7 @@ namespace negosuite_api.Controllers
                 return Conflict($"Stock Transfer Reference# {stockTransfer.ReferenceNo} already exist.");
             }
 
-            stockTransfer.ReferenceDate = DateTime.Now;
+            stockTransfer.CreatedDate = DateTime.Now;
 
             // Details
             foreach (var e in stockTransfer.StockTransferDetails)
