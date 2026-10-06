@@ -78,6 +78,7 @@ public sealed class SalesInvoiceLineRequest
 
 public sealed class SalesInvoiceDetailDto
 {
+    public bool IsDeliveryBased { get; set; }
     public int Id { get; set; }
     public int UserConfigId { get; set; }
     public string InvoiceNo { get; set; }

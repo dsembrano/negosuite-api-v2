@@ -47,6 +47,10 @@ public sealed class TransactionIntegrityFilter(negosuiteContext db) : IAsyncActi
             var input = context.ActionArguments.Values.FirstOrDefault(x => x != null && x.GetType().GetProperty("JournalEntries") != null)
                 ?? context.ActionArguments.Values.FirstOrDefault(x => x != null && x.GetType().GetProperty("UserConfigId") != null);
             var before = id == 0 ? null : await LoadAsync(name, company, id, ct);
+            if (name is "SalesInvoicesController" or "SalesReceiptsController")
+                await SalesWorkflowService.GuardLegacy(db, company, name == "SalesInvoicesController" ? "SI" : "SR", id, (short?)Get(input, "Status"), ct, method == "DELETE");
+            if (name is "BillsController" or "ReceivingReportsController" or "GeneralJournalsController")
+                await PurchaseWorkflowService.GuardLegacy(db, company, name == "BillsController" ? "PB" : name == "ReceivingReportsController" ? "GR" : "LC", id, method == "POST", ct, input);
             if (id != 0) Require(before != null, "Transaction not found.", 404);
             if (input != null)
             {

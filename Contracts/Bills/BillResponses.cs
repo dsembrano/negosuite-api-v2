@@ -9,6 +9,7 @@ namespace negosuite_api.Contracts.Bills;
 
 public sealed class BillDetailDto
 {
+    public int? PurchaseWorkflowId { get; set; }
     public int Id { get; set; }
     public int UserConfigId { get; set; }
     public string BillNo { get; set; }

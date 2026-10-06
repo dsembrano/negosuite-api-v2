@@ -31,6 +31,8 @@ public sealed class SalesReturnSourceService
     public async Task<ReturnSource> LoadAsync(int company,string kind,int id,CancellationToken ct)
     {
         Require(kind is "SI" or "SR","Select a Charge Invoice or Cash Invoice.");
+        var workflowSnapshot=await SalesWorkflowService.ReturnSnapshot(db,company,kind,id,ct);
+        if(workflowSnapshot!=null)return workflowSnapshot;
         var config=await db.Configs.AsNoTracking().SingleAsync(c=>c.Id==company,ct);
         Require(config.ARTradeAccountId.HasValue,"Configure Accounts Receivable Trade before creating a return.");
         ReturnSource result; List<JournalEntry> journals;List<Item> items;bool exclusive;string taxes;int? settlement;short status;

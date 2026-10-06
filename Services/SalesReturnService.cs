@@ -194,7 +194,7 @@ public sealed class SalesReturnService
     public async Task<object> PostAsync(User actor,int id,long version,CancellationToken ct)
     {
         var company=Company(actor);await using var tx=await LockCompanyAsync(db,company,ct);
-        Require(await db.Database.SqlQueryRaw<int>("SELECT COUNT(*) AS Value FROM information_schema.VIEWS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME IN ('inventorytransaction','salestransaction') AND VIEW_DEFINITION LIKE '%salesreturn%'").SingleAsync(ct)==2,"Sales Return reporting migrations must be installed before posting or voiding.",409);
+        Require(await db.Database.SqlQueryRaw<int>("SELECT COUNT(*) AS Value FROM information_schema.VIEWS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME IN ('inventorytransaction','salestransaction') AND (VIEW_DEFINITION LIKE '%salesreturn%' OR (TABLE_NAME='inventorytransaction' AND VIEW_DEFINITION LIKE '%inventorytransaction_before_salesworkflow%' AND EXISTS(SELECT 1 FROM information_schema.VIEWS v WHERE v.TABLE_SCHEMA=DATABASE() AND v.TABLE_NAME='inventorytransaction_before_salesworkflow' AND v.VIEW_DEFINITION LIKE '%salesreturn%')))").SingleAsync(ct)==2,"Sales Return reporting migrations must be installed before posting or voiding.",409);
         var row=await FindAsync(actor,id,ct);
         Demand(actor,row.CreatedByUserId==actor.Id?new[]{"canCreate","canEdit"}:new[]{"canEdit"});
         if(row.Status==1&&row.Version==version+1)return await PublicAsync(actor,row,ct);
@@ -212,7 +212,7 @@ public sealed class SalesReturnService
     public async Task<object> VoidAsync(User actor,int id,SalesReturnActionRequest input,CancellationToken ct)
     {
         Demand(actor,"canDelete");var company=Company(actor);await using var tx=await LockCompanyAsync(db,company,ct);
-        Require(await db.Database.SqlQueryRaw<int>("SELECT COUNT(*) AS Value FROM information_schema.VIEWS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME IN ('inventorytransaction','salestransaction') AND VIEW_DEFINITION LIKE '%salesreturn%'").SingleAsync(ct)==2,"Sales Return reporting migrations must be installed before posting or voiding.",409);
+        Require(await db.Database.SqlQueryRaw<int>("SELECT COUNT(*) AS Value FROM information_schema.VIEWS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME IN ('inventorytransaction','salestransaction') AND (VIEW_DEFINITION LIKE '%salesreturn%' OR (TABLE_NAME='inventorytransaction' AND VIEW_DEFINITION LIKE '%inventorytransaction_before_salesworkflow%' AND EXISTS(SELECT 1 FROM information_schema.VIEWS v WHERE v.TABLE_SCHEMA=DATABASE() AND v.TABLE_NAME='inventorytransaction_before_salesworkflow' AND v.VIEW_DEFINITION LIKE '%salesreturn%')))").SingleAsync(ct)==2,"Sales Return reporting migrations must be installed before posting or voiding.",409);
         var row=await FindAsync(actor,id,ct);
         Require(row.Version==input.Version&&row.Status==1,"Only the current posted version can be voided.",409);Require(!string.IsNullOrWhiteSpace(input.Reason)&&input.Reason.Length<=250,"Enter a void reason (up to 250 characters).");
         var source=JsonConvert.DeserializeObject<ReturnSource>(row.SourceSnapshotJson);Require(!row.JournalEntries.Any(j=>j.AccountId==source.ReceivableAccountId&&j.Nature=="C"&&!j.PaymentToJournalEntryId.HasValue&&j.Balance!=j.Amount),"Unapplied credit has already been consumed. Reverse its application first.");

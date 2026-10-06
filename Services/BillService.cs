@@ -75,7 +75,9 @@ public sealed class BillService
         .Include(b => b.JournalEntries).ThenInclude(j => j.Customer)
         .Include(b => b.JournalEntries).ThenInclude(j => j.Supplier)
         .Include(b => b.InventoryLocation).SingleOrDefaultAsync(ct);
-        return new TransactionResponseMapping().Map(bill);
+        var result = new TransactionResponseMapping().Map(bill);
+        if (result != null && await PurchaseWorkflowService.Installed(db, ct)) result.PurchaseWorkflowId = await db.PurchaseWorkflowDocuments.Where(d => d.UserConfigId == company && d.Kind == "PB" && d.LegacyId == id).Select(d => (int?)d.Id).SingleOrDefaultAsync(ct);
+        return result;
     }
 
     public async Task<string> ValidateWriteAsync(int company, int? id, Bill bill, CancellationToken ct)
@@ -113,4 +115,3 @@ public sealed class BillService
         return null;
     }
 }
-

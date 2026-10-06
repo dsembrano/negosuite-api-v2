@@ -114,6 +114,8 @@ namespace negosuite_api
             services.AddScoped<AccountCategoryService>();
             services.AddScoped<SalesInvoiceService>();
             services.AddScoped<SalesReturnService>();
+            services.AddScoped<SalesWorkflowService>();
+            services.AddScoped<PurchaseWorkflowService>();
             services.AddScoped<ReceivableApplicationService>();
             services.AddScoped<SalesReceiptService>();
             services.AddScoped<SalesInvoicePaymentService>();

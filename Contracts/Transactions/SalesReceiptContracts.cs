@@ -78,6 +78,7 @@ public sealed class SalesReceiptLineRequest
 
 public sealed class SalesReceiptDetailDto
 {
+    public bool IsDeliveryBased { get; set; }
     public int Id { get; set; }
     public int UserConfigId { get; set; }
     public string ReceiptNo { get; set; }

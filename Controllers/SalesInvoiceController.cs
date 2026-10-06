@@ -62,7 +62,10 @@ namespace negosuite_api.Controllers
         {
             if (!CompanyId.HasValue) return Unauthorized();
             var invoice = await invoices.GetAsync(CompanyId.Value, id, cancellationToken);
-            return invoice == null ? NotFound() : new TransactionResponseMapping().Map(invoice);
+            if (invoice == null) return NotFound();
+            var response = new TransactionResponseMapping().Map(invoice);
+            response.IsDeliveryBased = await SalesWorkflowService.Installed(_context, cancellationToken) && await _context.SalesWorkflowInvoices.AnyAsync(r=>r.UserConfigId==CompanyId.Value&&r.Kind=="SI"&&r.InvoiceId==id,cancellationToken);
+            return response;
         }
 
         [HttpPut("{id}")]
